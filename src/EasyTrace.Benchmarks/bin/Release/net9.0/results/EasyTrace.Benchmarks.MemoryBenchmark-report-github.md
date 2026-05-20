@@ -1,13 +1,5 @@
-![Alt text](./images/logo.png)
-
-# EasyTrace
-A lightweight project for tracing high-load systems.
-
-## Description
-The goal of the repository is to offer an alternative [System.Diagnostics.Activity](https://learn.microsoft.com/ru-ru/dotnet/api/system.diagnostics.activity?view=net-9.0) that is less expensive in terms of RAM and garbage collection load.
-
-### Benchmarks
 ```
+
 BenchmarkDotNet v0.15.8, Windows 10 (10.0.19045.6456/22H2/2022Update)
 AMD Ryzen 7 5700G with Radeon Graphics 3.80GHz, 1 CPU, 16 logical and 8 physical cores
 .NET SDK 10.0.103
@@ -22,25 +14,3 @@ AMD Ryzen 7 5700G with Radeon Graphics 3.80GHz, 1 CPU, 16 logical and 8 physical
 | **Activity** | **1000**       | **True**       |  **4.781 ms** | **0.0364 ms** | **0.0340 ms** |  **93.7500** |  **816032 B** |
 | **Activity** | **10000**      | **False**      | **44.042 ms** | **0.0401 ms** | **0.0335 ms** |        **-** |      **32 B** |
 | **Activity** | **10000**      | **True**       | **47.702 ms** | **0.1304 ms** | **0.1156 ms** | **909.0909** | **8160032 B** |
-
-
-## 💡 Usage
-
-Provide a quick example of how to use your code or run the application:
-
-```csharp
-TODO: Add examples.
-```
-
-## Authors
-Contributors names and contact info
-
-[@bugRanger](https://github.com/bugRanger)
-
-## 🤝 Contributing
-Contributions are welcome. Please fork the repository, create a feature branch, and submit a pull request.
-
-## 📄 License
-This project is licensed under the [MIT License](LICENSE-MIT)
-
-
