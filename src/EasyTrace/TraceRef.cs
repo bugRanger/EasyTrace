@@ -2,12 +2,18 @@
 
 public class TraceProvider
 {
-    // TODO: Add sampler.
-    // TODO: Add batcher.
+    // TODO: Configure sampler.
+    // TODO: Configure batcher.
+    // TODO: Add resources.
     // TODO: Add exporters.
 }
 
-public ref struct TraceRef(TraceProvider provider, Trace? trace) : IDisposable
+public struct TraceSource
+{
+    
+}
+
+public ref struct TraceScope(TraceProvider provider, Trace? trace) : IDisposable
 {
     public void Dispose()
     {
@@ -21,7 +27,7 @@ public class Trace
 
 public ref struct TraceData: IDisposable
 {
-    public TraceRef Next()
+    public Trace? Next()
     {
         throw new NotImplementedException();
     }
