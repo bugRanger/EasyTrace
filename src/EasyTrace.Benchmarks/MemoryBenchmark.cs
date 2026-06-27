@@ -3,28 +3,31 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using BenchmarkDotNet.Attributes;
+using EasyTrace.Activity;
 
 namespace EasyTrace.Benchmarks;
 
 [MemoryDiagnoser]
+[ThreadingDiagnoser]
 public class MemoryBenchmark
 {
     public static void Run() => BenchmarkRunner.Run<MemoryBenchmark>();
 
     private static readonly ActivitySource Source = new(nameof(MemoryBenchmark));
+    private static readonly TraceActivitySource TraceSource = new(nameof(MemoryBenchmark));
+
     private ActivityListener? _listener;
 
-    [Params(1_000, 10_000)] 
-    public int Iterations { get; set; }
+    [Params(1_000, 10_000)] public int Iterations { get; set; }
 
-    [Params(true, false)] 
-    public bool IsExporter { get; set; }
+    [Params(true, false)] public bool IsExporter { get; set; }
 
     [GlobalSetup]
     public void Setup()
     {
         if (IsExporter)
         {
+            // TODO: add real export in httpClient.
             _listener = new ActivityListener
             {
                 ShouldListenTo = s => s.Name == nameof(MemoryBenchmark),
@@ -44,6 +47,9 @@ public class MemoryBenchmark
     [Benchmark]
     public void Activity() => Execute(() => Source.StartActivity());
 
+    [Benchmark]
+    public void TraceScope() => Execute(() => TraceSource.Start());
+
     private void Execute<T>(Func<T> factory)
         where T : IDisposable, allows ref struct
     {
@@ -54,5 +60,9 @@ public class MemoryBenchmark
 
             Thread.SpinWait(100);
         }
+    }
+
+    private static void TraceSourceExport(in TraceActivityRef _)
+    {
     }
 }
