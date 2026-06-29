@@ -22,4 +22,8 @@
     <ItemGroup>
       <ProjectReference Include="..\EasyTrace\EasyTrace.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Export\snapshots\" />
+    </ItemGroup>
 </Project>

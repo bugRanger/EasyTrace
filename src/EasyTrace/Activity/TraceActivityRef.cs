@@ -8,7 +8,7 @@ public readonly ref struct TraceActivityRef(TraceActivitySource activitySource, 
     : ITraceActivity, ICopiable<TraceActivity>, IDisposable
 {
     public TraceIdentifier TraceId => activity.TraceId;
-    public TraceIdentifier SpanId => activity.TraceId;
+    public TraceIdentifier SpanId => activity.SpanId;
     public TraceActivitySource Source => activity.Source;
 
     public string OperationName => activity.OperationName;
