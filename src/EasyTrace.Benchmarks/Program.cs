@@ -1,10 +1,9 @@
 using System.IO;
-using System.Runtime.CompilerServices;
 using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
+using BenchmarkDotNet.Validators;
 
 namespace EasyTrace.Benchmarks
 {
@@ -24,7 +23,8 @@ namespace EasyTrace.Benchmarks
     {
         public static ManualConfig Shared =>
             ManualConfig.Create(DefaultConfig.Instance)
-                .AddDiagnoser(new MemoryDiagnoser(new MemoryDiagnoserConfig(true)))
+                .AddValidator(ExecutionValidator.FailOnError)
+                .AddValidator(ReturnValueValidator.FailOnError)
                 .AddColumn(CategoriesColumn.Default)
                 .WithOptions(ConfigOptions.JoinSummary)
                 .WithArtifactsPath(Directory.GetCurrentDirectory())

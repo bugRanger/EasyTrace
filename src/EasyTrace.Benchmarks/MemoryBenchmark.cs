@@ -4,20 +4,20 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
-using EasyTrace.Activity;
+using EasyTrace.Benchmarks.TestData;
 
 namespace EasyTrace.Benchmarks;
 
 [MemoryDiagnoser]
-[ThreadingDiagnoser]
 public class MemoryBenchmark
 {
     public static void Run() => BenchmarkRunner.Run<MemoryBenchmark>();
 
-    private static readonly ActivitySource Source = new(nameof(MemoryBenchmark));
-    private static readonly TraceActivitySource TraceSource = new(nameof(MemoryBenchmark));
+    private static ActivitySource? _activitySource;
+    private static TraceActivitySource? _traceActivitySource;
 
     private ActivityListener? _listener;
+    private ulong _activityCounter;
 
     [Params(1_000, 10_000)] public int Iterations { get; set; }
 
@@ -28,17 +28,26 @@ public class MemoryBenchmark
     [GlobalSetup]
     public void Setup()
     {
+        _activitySource = new ActivitySource(nameof(MemoryBenchmark));
         if (IsExporter)
         {
-            // TODO: add real export in httpClient.
             _listener = new ActivityListener
             {
                 ShouldListenTo = s => s.Name == nameof(MemoryBenchmark),
-                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) =>
+                    ActivitySamplingResult.AllData
             };
-
-            ActivitySource.AddActivityListener(_listener);
+            _listener.ActivityStopped += _ => Interlocked.Increment(ref _activityCounter);
+            System.Diagnostics.ActivitySource.AddActivityListener(_listener);
         }
+
+        var traceActivitySourceBuilder = new TraceActivitySourceBuilder();
+        if (IsExporter)
+        {
+            traceActivitySourceBuilder.AddExporter(new FakeExporter(() => Interlocked.Increment(ref _activityCounter)));
+        }
+
+        _traceActivitySource = traceActivitySourceBuilder.Build(nameof(MemoryBenchmark));
     }
 
     [GlobalCleanup]
@@ -48,14 +57,16 @@ public class MemoryBenchmark
     }
 
     [Benchmark]
-    public void DiagnosticActivity() => Execute(() => Source.StartActivity());
+    public ulong ActivitySource() => Execute(() => _activitySource!.StartActivity());
 
     [Benchmark]
-    public void TraceActivity() => Execute(() => TraceSource.Start());
+    public ulong TraceActivityRef() => Execute(() => _traceActivitySource!.Start());
 
-    private void Execute<T>(Func<T> factory)
-        where T : IDisposable, allows ref struct
+    private ulong Execute<T>(Func<T> factory)
+        where T : IDisposable?, allows ref struct
     {
+        _activityCounter = 0;
+
         Parallel.For(0,
             ParallelLimit,
             i =>
@@ -67,5 +78,7 @@ public class MemoryBenchmark
                     using var activity3 = factory();
                 }
             });
+
+        return Interlocked.Read(ref _activityCounter);
     }
 }

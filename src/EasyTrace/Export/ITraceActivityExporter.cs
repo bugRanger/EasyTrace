@@ -4,5 +4,5 @@ namespace EasyTrace.Export;
 
 public interface ITraceActivityExporter
 {
-    void Export(in TraceActivityRef activityRef);
+    void Export(scoped in TraceActivityRef activityRef);
 }

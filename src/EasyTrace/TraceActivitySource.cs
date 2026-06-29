@@ -1,4 +1,6 @@
-﻿using EasyTrace.Activity;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using EasyTrace.Activity;
 using EasyTrace.Export;
 using EasyTrace.Identifier;
 using EasyTrace.Identifier.Generator;
@@ -6,34 +8,26 @@ using EasyTrace.Time;
 
 namespace EasyTrace;
 
-// TODO: Configure sampler.
-// TODO: Configure batcher.
 // TODO: Add resources.
-// TODO: Add exporters.
-public class TraceActivitySource(
-    string name,
-    Version? version = null,
-    ITraceTimeProvider? traceTimeProvider = null,
-    ITraceIdentifierGenerator? identifierProvider = null)
+public class TraceActivitySource(string name, Version? version = null)
 {
-    private static readonly ThreadLocal<TraceActivity?> CurrentThreadLocal = new();
+    private static readonly ThreadLocal<TraceActivity?> ParentActivityByThreadLocal = new();
 
-    private ITraceTimeProvider TimeProvider { get; } = traceTimeProvider ?? new TraceTimeProvider();
-    private ITraceIdentifierGenerator IdentifierGenerator { get; } = identifierProvider ?? new Xoshiro256PlusPlus();
+    internal ITraceTimeProvider TimeProvider { get; init; } = new TraceTimeProvider();
+    internal ITraceIdentifierGenerator IdentifierGenerator { get; init; } = new Xoshiro256PlusPlus();
+    internal ITraceActivityExporter? Exporter { get; init; }
 
     public string Name { get; } = name;
 
     public string? Version { get; } = version?.ToString();
 
-    public ITraceActivityExporter? Exporter { get; set; }
-
     public static TraceActivity? Parent
     {
-        get => CurrentThreadLocal.Value;
-        private set => CurrentThreadLocal.Value = value;
+        get => ParentActivityByThreadLocal.Value;
+        private set => ParentActivityByThreadLocal.Value = value;
     }
 
-    public TraceActivityRef Start(string operationName = "")
+    public TraceActivityRef Start([CallerMemberName] string operationName = "", ActivityKind kind = ActivityKind.Internal)
     {
         if (Exporter == null)
         {
@@ -52,6 +46,7 @@ public class TraceActivitySource(
         }
 
         activity.Source = this;
+        activity.Kind = kind;
         activity.OperationName = operationName;
         activity.SpanId.Generate(IdentifierGenerator);
         activity.StartTime = TimeProvider.GetTimestamp();
@@ -64,7 +59,10 @@ public class TraceActivitySource(
 
     public void Stop(scoped in TraceActivityRef activityRef, TraceActivity activity)
     {
-        activity.EndTime = TimeProvider.GetTimestamp();
+        if (activity.EndTime == TimeSpan.Zero)
+        {
+            activity.EndTime = TimeProvider.GetTimestamp();
+        }
 
         Exporter?.Export(activityRef);
 
@@ -78,12 +76,3 @@ public class TraceActivitySource(
         TraceActivityPool.Shared.Return(activity);
     }
 }
-
-// public ref struct TraceData
-// {
-// }
-//
-// public interface TraceExporter
-// {
-//     void Export(scoped TraceData trace);
-// }

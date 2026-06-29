@@ -1,10 +1,11 @@
 ﻿using System.Diagnostics;
+using EasyTrace.Export.Batch.Buffer;
 using EasyTrace.Identifier;
 
 namespace EasyTrace.Activity;
 
 public readonly ref struct TraceActivityRef(TraceActivitySource activitySource, TraceActivity activity)
-    : IDisposable, ITraceActivity
+    : ITraceActivity, ICopiable<TraceActivity>, IDisposable
 {
     public TraceIdentifier TraceId => activity.TraceId;
     public TraceIdentifier SpanId => activity.TraceId;
@@ -44,5 +45,15 @@ public readonly ref struct TraceActivityRef(TraceActivitySource activitySource, 
         }
 
         activitySource.Stop(this, activity);
+    }
+
+    void ICopiable<TraceActivity>.CopyFrom(TraceActivity source)
+    {
+        activity.CopyFrom(source);
+    }
+
+    void ICopiable<TraceActivity>.CopyTo(TraceActivity destination)
+    {
+        activity.CopyTo(destination);
     }
 }

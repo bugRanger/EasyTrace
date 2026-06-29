@@ -9,22 +9,22 @@ The goal of the repository is to offer an alternative [System.Diagnostics.Activi
 ### Benchmarks
 ```
 BenchmarkDotNet v0.15.8, Windows 10 (10.0.19045.6456/22H2/2022Update)
-AMD Ryzen 3 2200G with Radeon Vega Graphics 3.50GHz, 1 CPU, 4 logical and 4 physical cores
-.NET SDK 10.0.201
-  [Host]     : .NET 9.0.14 (9.0.14, 9.0.1426.11910), X64 RyuJIT x86-64-v3
-  DefaultJob : .NET 9.0.14 (9.0.14, 9.0.1426.11910), X64 RyuJIT x86-64-v3
-
+AMD Ryzen 7 5700G with Radeon Graphics 3.80GHz, 1 CPU, 16 logical and 8 physical cores
+.NET SDK 10.0.103
+  [Host]     : .NET 9.0.13 (9.0.13, 9.0.1326.6317), X64 RyuJIT x86-64-v3
+  DefaultJob : .NET 9.0.13 (9.0.13, 9.0.1326.6317), X64 RyuJIT x86-64-v3
 ```
-| Method     | Iterations | IsExporter | Mean      | Error     | StdDev    | Median    | Gen0      | Allocated |
-|----------- |----------- |----------- |----------:|----------:|----------:|----------:|----------:|----------:|
-| Activity   | 1000       | False      |  3.816 ms | 0.0312 ms | 0.0277 ms |  3.814 ms |         - |      32 B |
-| TraceScope | 1000       | False      |  3.071 ms | 0.0597 ms | 0.0965 ms |  3.049 ms |         - |      32 B |
-| Activity   | 1000       | True       |  3.812 ms | 0.0754 ms | 0.1836 ms |  3.753 ms |  386.7188 |  816032 B |
-| TraceScope | 1000       | True       |  3.886 ms | 0.0656 ms | 0.0645 ms |  3.879 ms |         - |      32 B |
-| Activity   | 10000      | False      | 37.754 ms | 0.7475 ms | 1.5603 ms | 37.827 ms |         - |      32 B |
-| TraceScope | 10000      | False      | 36.388 ms | 0.7253 ms | 1.1292 ms | 36.678 ms |         - |      32 B |
-| Activity   | 10000      | True       | 43.773 ms | 0.4279 ms | 0.4003 ms | 43.700 ms | 3846.1538 | 8160032 B |
-| TraceScope | 10000      | True       | 44.052 ms | 0.6760 ms | 0.6324 ms | 43.960 ms |         - |      32 B |
+| Method           | Iterations | ParallelLimit | IsExporter | Mean        | Error      | StdDev     | Gen0      | Gen1    | Allocated   |
+|----------------- |----------- |-------------- |----------- |------------:|-----------:|-----------:|----------:|--------:|------------:|
+| ActivitySource   | 1000       | 4             | False      |    43.92 us |   0.876 us |   1.580 us |    0.3052 |       - |     2.48 KB |
+| TraceActivityRef | 1000       | 4             | False      |    15.80 us |   0.295 us |   0.276 us |    0.3052 |       - |     2.47 KB |
+| ActivitySource   | 1000       | 4             | True       |   795.88 us |  15.775 us |  24.090 us |  588.8672 |  9.7656 |  4752.54 KB |
+| TraceActivityRef | 1000       | 4             | True       |   344.26 us |   4.812 us |   4.501 us |         - |       - |     2.49 KB |
+| ActivitySource   | 10000      | 4             | False      |   388.56 us |   7.729 us |  13.333 us |         - |       - |      2.5 KB |
+| TraceActivityRef | 10000      | 4             | False      |   138.12 us |   2.759 us |   3.388 us |    0.2441 |       - |     2.49 KB |
+| ActivitySource   | 10000      | 4             | True       | 7,750.68 us | 153.829 us | 307.214 us | 5882.8125 | 46.8750 | 47502.54 KB |
+| TraceActivityRef | 10000      | 4             | True       | 3,394.63 us |  65.616 us |  67.382 us |         - |       - |     2.52 KB |
+
 
 
 ## 💡 Usage
