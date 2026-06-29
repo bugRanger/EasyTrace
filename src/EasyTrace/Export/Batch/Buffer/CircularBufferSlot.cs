@@ -1,6 +1,7 @@
 ﻿namespace EasyTrace.Export.Batch.Buffer;
 
-internal struct CircularBufferSlot<T>()
+
+internal class CircularBufferSlot<T>
     where T : class, ICopiable<T>, new()
 {
     private bool _isEmpty = true;
@@ -13,7 +14,7 @@ internal struct CircularBufferSlot<T>()
     /// </returns>
     public bool IsEmpty()
     {
-        return Volatile.Read(ref _isEmpty);
+        return _isEmpty;
     }
 
     /// <summary>

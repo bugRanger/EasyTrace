@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace EasyTrace.Export.Batch.Buffer;
 
@@ -6,12 +7,12 @@ namespace EasyTrace.Export.Batch.Buffer;
 /// Lock-free implementation of single-consumer multi-producer circular buffer.
 /// </summary>
 /// <remarks>
-/// The buffer does not store a reference to the object, but only rewrites its state into a free slot.
+/// The buffer does not store a reference to the object, but only rewrites its state into a free slot. 
 /// </remarks>
 public sealed class CircularBuffer<T>(uint capacity)
     where T : class, ICopiable<T>, new()
 {
-    private readonly CircularBufferSlot<T>[] _slots = new CircularBufferSlot<T>[capacity];
+    private readonly CircularBufferSlot<T>?[] _slots = new CircularBufferSlot<T>[capacity];
     private ulong _head;
     private ulong _tail;
 
@@ -25,8 +26,7 @@ public sealed class CircularBuffer<T>(uint capacity)
         get
         {
             var tail = Volatile.Read(ref _tail);
-            var head = Volatile.Read(ref _head);
-            return head - tail;
+            return Volatile.Read(ref _head) - tail;
         }
     }
 
@@ -67,13 +67,15 @@ public sealed class CircularBuffer<T>(uint capacity)
 
             while (true)
             {
-                var slot = _slots[GetIndex(head)];
+                var slot = Volatile.Read(ref _slots[GetIndex(head)]) ?? new CircularBufferSlot<T>();
                 if (!slot.IsEmpty())
                 {
                     continue;
                 }
 
                 slot.CopyFrom(value);
+                Volatile.Write(ref _slots[GetIndex(head)], slot);
+
                 break;
             }
 
@@ -114,7 +116,7 @@ public sealed class CircularBuffer<T>(uint capacity)
     /// <returns>
     /// Returns <c>true</c> if the item was read from the buffer successfully; <c>false</c> if the buffer is empty.
     /// </returns>
-    private bool Next(out CircularBufferSlot<T> slot)
+    private bool Next([MaybeNullWhen(false)] out CircularBufferSlot<T> slot)
     {
         while (true)
         {
@@ -123,19 +125,19 @@ public sealed class CircularBuffer<T>(uint capacity)
 
             if (head - tail == 0)
             {
-                slot = default;
+                slot = null;
                 return false;
             }
 
             var index = GetIndex(tail);
-            if (_slots[index].IsEmpty())
+
+            slot = Volatile.Read(ref _slots[index]);
+            if (slot == null || slot.IsEmpty())
             {
                 continue;
             }
 
             Volatile.Write(ref _tail, tail + 1);
-            slot = _slots[index];
-
             return true;
         }
     }
