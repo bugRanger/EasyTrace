@@ -11,29 +11,13 @@ public readonly ref struct TraceActivityRef(TraceActivitySource activitySource, 
     public TraceIdentifier SpanId => activity.TraceId;
     public TraceActivitySource Source => activity.Source;
 
-    public string OperationName
-    {
-        get => activity.OperationName;
-        set => activity.OperationName = value;
-    }
+    public string OperationName => activity.OperationName;
 
-    public ActivityKind Kind
-    {
-        get => activity.Kind;
-        set => activity.Kind = value;
-    }
+    public ActivityKind Kind => activity.Kind;
 
-    public TimeSpan StartTime
-    {
-        get => activity.StartTime;
-        set => activity.StartTime = value;
-    }
+    public TimeSpan StartTime => activity.StartTime;
 
-    public TimeSpan EndTime
-    {
-        get => activity.EndTime;
-        set => activity.EndTime = value;
-    }
+    public TimeSpan EndTime => activity.EndTime;
 
     public TimeSpan Duration => activity.Duration;
 

@@ -8,9 +8,9 @@ public interface ITraceActivity
     TraceIdentifier TraceId { get; }
     TraceIdentifier SpanId { get; }
     TraceActivitySource Source { get; }
-    string OperationName { get; set; }
-    ActivityKind Kind { get; set; }
-    TimeSpan StartTime { get; set; }
-    TimeSpan EndTime { get; set; }
+    string OperationName { get; }
+    ActivityKind Kind { get; }
+    TimeSpan StartTime { get; }
+    TimeSpan EndTime { get; }
     TimeSpan Duration { get; }
 }
