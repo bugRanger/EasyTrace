@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using EasyTrace.Activity;
 
@@ -19,6 +20,8 @@ public class MemoryBenchmark
     private ActivityListener? _listener;
 
     [Params(1_000, 10_000)] public int Iterations { get; set; }
+
+    [Params(4)] public int ParallelLimit { get; set; }
 
     [Params(true, false)] public bool IsExporter { get; set; }
 
@@ -45,24 +48,24 @@ public class MemoryBenchmark
     }
 
     [Benchmark]
-    public void Activity() => Execute(() => Source.StartActivity());
+    public void DiagnosticActivity() => Execute(() => Source.StartActivity());
 
     [Benchmark]
-    public void TraceScope() => Execute(() => TraceSource.Start());
+    public void TraceActivity() => Execute(() => TraceSource.Start());
 
     private void Execute<T>(Func<T> factory)
         where T : IDisposable, allows ref struct
     {
-        foreach (var _ in Enumerable.Repeat(0, Iterations))
-        {
-            using var activity1 = factory();
-            using var activity2 = factory();
-
-            Thread.SpinWait(100);
-        }
-    }
-
-    private static void TraceSourceExport(in TraceActivityRef _)
-    {
+        Parallel.For(0,
+            ParallelLimit,
+            i =>
+            {
+                foreach (var _ in Enumerable.Repeat(0, Iterations))
+                {
+                    using var activity1 = factory();
+                    using var activity2 = factory();
+                    using var activity3 = factory();
+                }
+            });
     }
 }

@@ -1,20 +1,20 @@
 ```
 
 BenchmarkDotNet v0.15.8, Windows 10 (10.0.19045.6456/22H2/2022Update)
-AMD Ryzen 3 2200G with Radeon Vega Graphics 3.50GHz, 1 CPU, 4 logical and 4 physical cores
-.NET SDK 10.0.201
-  [Host]     : .NET 9.0.14 (9.0.14, 9.0.1426.11910), X64 RyuJIT x86-64-v3
-  DefaultJob : .NET 9.0.14 (9.0.14, 9.0.1426.11910), X64 RyuJIT x86-64-v3
+AMD Ryzen 7 5700G with Radeon Graphics 3.80GHz, 1 CPU, 16 logical and 8 physical cores
+.NET SDK 10.0.103
+  [Host]     : .NET 9.0.13 (9.0.13, 9.0.1326.6317), X64 RyuJIT x86-64-v3
+  DefaultJob : .NET 9.0.13 (9.0.13, 9.0.1326.6317), X64 RyuJIT x86-64-v3
 
 
 ```
-| Method     | Iterations | IsExporter | Mean      | Error     | StdDev    | Median    | Gen0      | Allocated |
-|----------- |----------- |----------- |----------:|----------:|----------:|----------:|----------:|----------:|
-| **Activity**   | **1000**       | **False**      |  **3.816 ms** | **0.0312 ms** | **0.0277 ms** |  **3.814 ms** |         **-** |      **32 B** |
-| TraceScope | 1000       | False      |  3.071 ms | 0.0597 ms | 0.0965 ms |  3.049 ms |         - |      32 B |
-| **Activity**   | **1000**       | **True**       |  **3.812 ms** | **0.0754 ms** | **0.1836 ms** |  **3.753 ms** |  **386.7188** |  **816032 B** |
-| TraceScope | 1000       | True       |  3.886 ms | 0.0656 ms | 0.0645 ms |  3.879 ms |         - |      32 B |
-| **Activity**   | **10000**      | **False**      | **37.754 ms** | **0.7475 ms** | **1.5603 ms** | **37.827 ms** |         **-** |      **32 B** |
-| TraceScope | 10000      | False      | 36.388 ms | 0.7253 ms | 1.1292 ms | 36.678 ms |         - |      32 B |
-| **Activity**   | **10000**      | **True**       | **43.773 ms** | **0.4279 ms** | **0.4003 ms** | **43.700 ms** | **3846.1538** | **8160032 B** |
-| TraceScope | 10000      | True       | 44.052 ms | 0.6760 ms | 0.6324 ms | 43.960 ms |         - |      32 B |
+| Method             | Iterations | ParallelLimit | IsExporter | Mean        | Error      | StdDev     | Completed Work Items | Lock Contentions | Gen0      | Gen1    | Allocated   |
+|------------------- |----------- |-------------- |----------- |------------:|-----------:|-----------:|---------------------:|-----------------:|----------:|--------:|------------:|
+| **DiagnosticActivity** | **1000**       | **4**             | **False**      |    **43.03 μs** |   **0.853 μs** |   **1.560 μs** |               **5.0028** |           **0.0004** |    **0.3052** |       **-** |     **2.48 KB** |
+| TraceActivity      | 1000       | 4             | False      |    15.18 μs |   0.293 μs |   0.301 μs |               4.9662 |           0.0002 |    0.3052 |       - |     2.47 KB |
+| **DiagnosticActivity** | **1000**       | **4**             | **True**       |   **772.40 μs** |  **15.414 μs** |  **23.072 μs** |               **5.0000** |           **0.0020** |  **588.8672** |  **9.7656** |  **4752.54 KB** |
+| TraceActivity      | 1000       | 4             | True       |    15.67 μs |   0.254 μs |   0.238 μs |               4.9865 |           0.0003 |    0.3052 |       - |     2.48 KB |
+| **DiagnosticActivity** | **10000**      | **4**             | **False**      |   **387.32 μs** |   **7.624 μs** |  **12.946 μs** |               **5.0024** |           **0.0010** |         **-** |       **-** |      **2.5 KB** |
+| TraceActivity      | 10000      | 4             | False      |   137.90 μs |   2.748 μs |   5.294 μs |               5.0020 |           0.0015 |    0.2441 |       - |     2.49 KB |
+| **DiagnosticActivity** | **10000**      | **4**             | **True**       | **7,364.26 μs** | **143.323 μs** | **200.919 μs** |               **5.0000** |                **-** | **5875.0000** | **46.8750** | **47502.48 KB** |
+| TraceActivity      | 10000      | 4             | True       |   139.31 μs |   2.777 μs |   5.283 μs |               5.0039 |           0.0010 |    0.2441 |       - |     2.49 KB |
