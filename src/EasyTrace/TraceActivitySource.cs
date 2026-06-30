@@ -12,7 +12,7 @@ public class TraceActivitySource(string name, Version? version = null)
 {
     private static readonly ThreadLocal<TraceActivity?> ParentActivityByThreadLocal = new();
 
-    internal static TraceActivitySource Empty = new (nameof(Empty));
+    internal static readonly TraceActivitySource Empty = new(nameof(Empty));
 
     internal ITraceTimeProvider TimeProvider { get; init; } = new TraceTimeProvider();
     internal ITraceIdentifierGenerator IdentifierGenerator { get; init; } = new Xoshiro256PlusPlus();
@@ -28,11 +28,13 @@ public class TraceActivitySource(string name, Version? version = null)
 
     public string? Version { get; } = version?.ToString();
 
-    public TraceActivityRef Start([CallerMemberName] string operationName = "", ActivityKind kind = ActivityKind.Internal)
+    public TraceActivityScope? Start(
+        [CallerMemberName] string operationName = "",
+        ActivityKind kind = ActivityKind.Internal)
     {
         if (Exporter == null)
         {
-            return new TraceActivityRef(this, TraceActivity.Empty);
+            return null;
         }
 
         var activity = TraceActivityPool.Shared.Rent();
@@ -55,17 +57,17 @@ public class TraceActivitySource(string name, Version? version = null)
 
         Parent ??= activity;
 
-        return new TraceActivityRef(this, activity);
+        return new TraceActivityScope(activity);
     }
 
-    public void Stop(scoped in TraceActivityRef activityRef, TraceActivity activity)
+    public void Stop(TraceActivity activity)
     {
         if (activity.EndTime == TimeSpan.Zero)
         {
             activity.EndTime = TimeProvider.GetTimestamp();
         }
 
-        Exporter?.Export(activityRef);
+        Exporter?.Export(new TraceActivityRef(activity));
 
         if (Parent == activity)
         {

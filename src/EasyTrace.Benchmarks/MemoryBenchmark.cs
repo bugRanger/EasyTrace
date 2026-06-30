@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -59,13 +58,7 @@ public class MemoryBenchmark
     }
 
     [Benchmark]
-    public ulong ActivitySource() => Execute(() => _activitySource!.StartActivity());
-
-    [Benchmark]
-    public ulong TraceActivityRef() => Execute(() => _traceActivitySource!.Start());
-
-    private ulong Execute<T>(Func<T> factory)
-        where T : IDisposable?, allows ref struct
+    public ulong ActivitySource()
     {
         _activityCounter = 0;
 
@@ -75,9 +68,29 @@ public class MemoryBenchmark
             {
                 foreach (var _ in Enumerable.Repeat(0, Iterations))
                 {
-                    using var activity1 = factory();
-                    using var activity2 = factory();
-                    using var activity3 = factory();
+                    using var activity1 = _activitySource!.StartActivity();
+                    using var activity2 = _activitySource!.StartActivity();
+                    using var activity3 = _activitySource!.StartActivity();
+                }
+            });
+
+        return Interlocked.Read(ref _activityCounter);
+    }
+
+    [Benchmark]
+    public ulong TraceActivityRef()
+    {
+        _activityCounter = 0;
+
+        Parallel.For(0,
+            ParallelLimit,
+            i =>
+            {
+                foreach (var _ in Enumerable.Repeat(0, Iterations))
+                {
+                    using var activity1 = _traceActivitySource!.Start();
+                    using var activity2 = _traceActivitySource!.Start();
+                    using var activity3 = _traceActivitySource!.Start();
                 }
             });
 
