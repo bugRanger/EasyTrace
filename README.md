@@ -25,14 +25,21 @@ AMD Ryzen 7 5700G with Radeon Graphics 3.80GHz, 1 CPU, 16 logical and 8 physical
 | ActivitySource   | 10000      | 4             | True       | 7,750.68 us | 153.829 us | 307.214 us | 5882.8125 | 46.8750 | 47502.54 KB |
 | TraceActivityRef | 10000      | 4             | True       | 3,394.63 us |  65.616 us |  67.382 us |         - |       - |     2.52 KB |
 
-
-
 ## 💡 Usage
 
 Provide a quick example of how to use your code or run the application:
 
 ```csharp
-TODO: Add examples.
+var source = new TraceActivitySourceBuilder()
+    .SetBatchExportOptions(new BatchExportOptions())
+    // your impl for export.
+    .AddExporter(new MyExport())
+    .Build("MySource");
+
+using (var activityRef = source.Start()) 
+{
+    // your section for measurement.
+}
 ```
 
 ## Authors

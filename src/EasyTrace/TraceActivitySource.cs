@@ -8,7 +8,6 @@ using EasyTrace.Time;
 
 namespace EasyTrace;
 
-// TODO: Add resources.
 public class TraceActivitySource(string name, Version? version = null)
 {
     private static readonly ThreadLocal<TraceActivity?> ParentActivityByThreadLocal = new();
@@ -17,15 +16,15 @@ public class TraceActivitySource(string name, Version? version = null)
     internal ITraceIdentifierGenerator IdentifierGenerator { get; init; } = new Xoshiro256PlusPlus();
     internal ITraceActivityExporter? Exporter { get; init; }
 
+    private static TraceActivity? Parent
+    {
+        get => ParentActivityByThreadLocal.Value;
+        set => ParentActivityByThreadLocal.Value = value;
+    }
+
     public string Name { get; } = name;
 
     public string? Version { get; } = version?.ToString();
-
-    public static TraceActivity? Parent
-    {
-        get => ParentActivityByThreadLocal.Value;
-        private set => ParentActivityByThreadLocal.Value = value;
-    }
 
     public TraceActivityRef Start([CallerMemberName] string operationName = "", ActivityKind kind = ActivityKind.Internal)
     {
