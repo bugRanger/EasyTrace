@@ -35,4 +35,4 @@ jobs:
 
     - name: Run Benchmarks
       run: |
-        dotnet run --project EasyTrace.Benchmarks/EasyTrace.Benchmarks.csproj --configuration Release -- --filter *
+        dotnet run --project src/EasyTrace.Benchmarks/EasyTrace.Benchmarks.csproj --configuration Release -- --filter *
