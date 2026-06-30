@@ -9,6 +9,8 @@ using EasyTrace.Benchmarks.TestData;
 namespace EasyTrace.Benchmarks;
 
 [MemoryDiagnoser]
+[JsonExporterAttribute.Full]
+[JsonExporterAttribute.FullCompressed]
 public class MemoryBenchmark
 {
     public static void Run() => BenchmarkRunner.Run<MemoryBenchmark>();

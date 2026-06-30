@@ -1,0 +1,47 @@
+name: .NET CI with Tests and Benchmarks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened, ready_for_review ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-test:
+    name: Build, Test, and Benchmark
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false || github.event_name == 'push'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        cache: true
+        cache-dependency-path: "**/packages.lock.json"
+
+    - name: Setup MSBuild Problem Matcher
+      uses: ammaraskar/msvc-problem-matcher@master
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build solution
+      run: dotnet build --configuration Release --no-restore /p:TreatWarningsAsErrors=true
+
+    - name: Run Tests
+      run: dotnet test --configuration Release --no-build --verbosity normal
+
+    - name: Run Benchmarks
+      run: |
+        dotnet run --project src/EasyTrace.Benchmarks/EasyTrace.Benchmarks.csproj --configuration Release -- --filter '*'
+
