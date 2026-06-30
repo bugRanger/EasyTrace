@@ -1,29 +1,11 @@
 ﻿using System.Diagnostics;
-using EasyTrace.Activity;
-using EasyTrace.Export;
+using EasyTrace.Export.Batch;
 using EasyTrace.Tests.TestData;
 
 namespace EasyTrace.Tests.Export;
 
 public class ActivityExportTests
 {
-    private class InMemoryExport : ITraceActivityExporter
-    {
-        public readonly List<string> Items = [];
-
-        public void Export(scoped in TraceActivityRef activityRef)
-        {
-            Items.Add(
-                $"{nameof(ITraceActivity.TraceId)}: {Convert.ToHexStringLower(activityRef.TraceId.AsReadOnlySpan())}|" +
-                $"{nameof(ITraceActivity.SpanId)}: {Convert.ToHexStringLower(activityRef.SpanId.AsReadOnlySpan())}|" +
-                $"{nameof(ITraceActivity.Source)}: {activityRef.Source.Name} {activityRef.Source.Version}|" +
-                $"{nameof(ITraceActivity.OperationName)}: {activityRef.OperationName}|" +
-                $"{nameof(ITraceActivity.Kind)}: {activityRef.Kind}|" +
-                $"{nameof(ITraceActivity.StartTime)}: {activityRef.StartTime}|" +
-                $"{nameof(ITraceActivity.EndTime)}: {activityRef.EndTime}");
-        }
-    }
-
     private static readonly VerifySettings Settings;
 
     static ActivityExportTests()
@@ -44,7 +26,7 @@ public class ActivityExportTests
         var inMemoryExporter = new InMemoryExport();
         var source = new TraceActivitySourceBuilder()
             .SetTimeProvider(new MoqTimeProvider(DateTime.MinValue.ToUniversalTime()))
-            .SetIdentifierGenerator(new MoqIdentGenerator(
+            .SetIdentifierGenerator(MoqIdentGenerator.Set(
                 ActivityTraceId.CreateFromString("0af7651916cd43dd8448eb211c80319c"),
                 ActivitySpanId.CreateFromString("b7ad6b7169203331")))
             .AddExporter(inMemoryExporter)
@@ -60,13 +42,13 @@ public class ActivityExportTests
     }
 
     [Test]
-    public Task GroupRelatedActivity()
+    public Task GroupActivity()
     {
         // Arrange
         var inMemoryExporter = new InMemoryExport();
         var source = new TraceActivitySourceBuilder()
             .SetTimeProvider(new MoqTimeProvider(DateTime.MinValue.ToUniversalTime()))
-            .SetIdentifierGenerator(new MoqIdentGenerator(
+            .SetIdentifierGenerator(MoqIdentGenerator.Set(
                 ActivityTraceId.CreateFromString("0af7651916cd43dd8448eb211c80319c"),
                 ActivitySpanId.CreateFromString("b7ad6b7169203331"),
                 ActivitySpanId.CreateFromString("b8ad6b7169203331"),
@@ -83,6 +65,121 @@ public class ActivityExportTests
         }
 
         // Assert
+        return Verify(inMemoryExporter.Items, Settings);
+    }
+
+    [Test]
+    public Task SingleBatchActivity()
+    {
+        // Arrange
+        var inMemoryExporter = new InMemoryExport();
+        var source = new TraceActivitySourceBuilder()
+            .SetTimeProvider(new MoqTimeProvider(DateTime.MinValue.ToUniversalTime()))
+            .SetIdentifierGenerator(MoqIdentGenerator.Sequence(1))
+            .SetBatchExportOptions(new BatchExportOptions
+            {
+                MaxExportBatchSize = 2,
+                ScheduledDelayMilliseconds = uint.MaxValue,
+            })
+            .AddExporter(inMemoryExporter)
+            .Build(nameof(ActivityExportTests));
+
+        // Act
+        {
+            using var _ = source.Start("Parent");
+            using var __ = source.Start("Child1");
+        }
+
+        // Assert
+        // - wait for batch processing from another thread to complete.
+        Task.Delay(500).Wait();
+        return Verify(inMemoryExporter.Items, Settings);
+    }
+
+    [Test]
+    public Task MultiBatchActivity()
+    {
+        // Arrange
+        var inMemoryExporter = new InMemoryExport();
+        var source = new TraceActivitySourceBuilder()
+            .SetTimeProvider(new MoqTimeProvider(DateTime.MinValue.ToUniversalTime()))
+            .SetIdentifierGenerator(MoqIdentGenerator.Sequence(10))
+            .SetBatchExportOptions(new BatchExportOptions
+            {
+                MaxExportBatchSize = 2,
+                ScheduledDelayMilliseconds = uint.MaxValue,
+            })
+            .AddExporter(inMemoryExporter)
+            .Build(nameof(ActivityExportTests));
+
+        // Act
+        for (var i = 0; i < 10; i++)
+        {
+            using var _ = source.Start("Parent");
+            using var __ = source.Start("Child1");
+        }
+
+        // Assert
+        // - wait for batch processing from another thread to complete.
+        Task.Delay(500).Wait();
+        return Verify(inMemoryExporter.Items, Settings);
+    }
+
+    [Test]
+    public Task ScheduledBatchDisable()
+    {
+        // Arrange
+        var inMemoryExporter = new InMemoryExport();
+        var source = new TraceActivitySourceBuilder()
+            .SetTimeProvider(new MoqTimeProvider(DateTime.MinValue.ToUniversalTime()))
+            .SetIdentifierGenerator(MoqIdentGenerator.Sequence(2))
+            .SetBatchExportOptions(new BatchExportOptions
+            {
+                MaxExportBatchSize = uint.MaxValue,
+                ScheduledDelayMilliseconds = uint.MaxValue,
+            })
+            .AddExporter(inMemoryExporter)
+            .Build(nameof(ActivityExportTests));
+
+        // Act
+        {
+            using var _ = source.Start("Parent");
+            using var __ = source.Start("Child1");
+        }
+
+        // Assert
+        // - wait for batch processing from another thread to complete.
+        Task.Delay(500).Wait();
+        return Verify(inMemoryExporter.Items, Settings);
+    }
+
+    [Test]
+    public Task ScheduledBatchEnable()
+    {
+        // Arrange
+        var scheduledDelayMilliseconds = TimeSpan.FromMilliseconds(500);
+
+        var inMemoryExporter = new InMemoryExport();
+        var source = new TraceActivitySourceBuilder()
+            .SetTimeProvider(new MoqTimeProvider(DateTime.MinValue.ToUniversalTime()))
+            .SetIdentifierGenerator(MoqIdentGenerator.Sequence(2))
+            .SetBatchExportOptions(new BatchExportOptions
+            {
+                MaxExportBatchSize = uint.MaxValue,
+                ScheduledDelayMilliseconds = (uint)scheduledDelayMilliseconds.Milliseconds,
+            })
+            .AddExporter(inMemoryExporter)
+            .Build(nameof(ActivityExportTests));
+
+        // Act
+        {
+            using var _ = source.Start("Parent");
+            using var __ = source.Start("Child1");
+        }
+
+        // Assert
+        // - wait for batch processing from another thread to complete.
+        Task.Delay(scheduledDelayMilliseconds.Multiply(2)).Wait();
         return Verify(inMemoryExporter.Items, Settings);
     }
 }
