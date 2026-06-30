@@ -1,5 +1,7 @@
 ![Alt text](./images/logo.png)
 
+[![build](https://github.com/bugRanger/EasyTrace/actions/workflows/ci.yml/badge.svg)](https://github.com/bugRanger/EasyTrace/actions/workflows/ci.yml)
+
 # EasyTrace
 A lightweight project for tracing high-load systems.
 
