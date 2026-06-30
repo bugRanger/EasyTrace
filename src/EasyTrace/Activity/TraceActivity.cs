@@ -10,8 +10,8 @@ public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
 
     public TraceIdentifier TraceId { get; } = TraceIdentifier.CreateTraceId();
     public TraceIdentifier SpanId { get; } = TraceIdentifier.CreateSpanId();
-    public TraceActivitySource Source { get; internal set; }
-    public string OperationName { get; set; }
+    public TraceActivitySource Source { get; internal set; } = TraceActivitySource.Empty;
+    public string OperationName { get; set; } = string.Empty;
     public ActivityKind Kind { get; set; }
     public TimeSpan StartTime { get; set; }
     public TimeSpan EndTime { get; set; }

@@ -12,6 +12,8 @@ public class TraceActivitySource(string name, Version? version = null)
 {
     private static readonly ThreadLocal<TraceActivity?> ParentActivityByThreadLocal = new();
 
+    internal static TraceActivitySource Empty = new (nameof(Empty));
+
     internal ITraceTimeProvider TimeProvider { get; init; } = new TraceTimeProvider();
     internal ITraceIdentifierGenerator IdentifierGenerator { get; init; } = new Xoshiro256PlusPlus();
     internal ITraceActivityExporter? Exporter { get; init; }
