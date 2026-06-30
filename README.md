@@ -13,23 +13,33 @@ AMD Ryzen 7 5700G with Radeon Graphics 3.80GHz, 1 CPU, 16 logical and 8 physical
 .NET SDK 10.0.103
   [Host]     : .NET 9.0.13 (9.0.13, 9.0.1326.6317), X64 RyuJIT x86-64-v3
   DefaultJob : .NET 9.0.13 (9.0.13, 9.0.1326.6317), X64 RyuJIT x86-64-v3
-
-
 ```
-| Method   | Iterations | IsExporter | Mean      | Error     | StdDev    | Gen0     | Allocated |
-|--------- |----------- |----------- |----------:|----------:|----------:|---------:|----------:|
-| **Activity** | **1000**       | **False**      |  **4.410 ms** | **0.0074 ms** | **0.0057 ms** |        **-** |      **32 B** |
-| **Activity** | **1000**       | **True**       |  **4.781 ms** | **0.0364 ms** | **0.0340 ms** |  **93.7500** |  **816032 B** |
-| **Activity** | **10000**      | **False**      | **44.042 ms** | **0.0401 ms** | **0.0335 ms** |        **-** |      **32 B** |
-| **Activity** | **10000**      | **True**       | **47.702 ms** | **0.1304 ms** | **0.1156 ms** | **909.0909** | **8160032 B** |
-
+| Method           | Iterations | ParallelLimit | IsExporter | Mean        | Error      | StdDev     | Gen0      | Gen1    | Allocated   |
+|----------------- |----------- |-------------- |----------- |------------:|-----------:|-----------:|----------:|--------:|------------:|
+| ActivitySource   | 1000       | 4             | False      |    43.92 us |   0.876 us |   1.580 us |    0.3052 |       - |     2.48 KB |
+| TraceActivityRef | 1000       | 4             | False      |    15.80 us |   0.295 us |   0.276 us |    0.3052 |       - |     2.47 KB |
+| ActivitySource   | 1000       | 4             | True       |   795.88 us |  15.775 us |  24.090 us |  588.8672 |  9.7656 |  4752.54 KB |
+| TraceActivityRef | 1000       | 4             | True       |   344.26 us |   4.812 us |   4.501 us |         - |       - |     2.49 KB |
+| ActivitySource   | 10000      | 4             | False      |   388.56 us |   7.729 us |  13.333 us |         - |       - |      2.5 KB |
+| TraceActivityRef | 10000      | 4             | False      |   138.12 us |   2.759 us |   3.388 us |    0.2441 |       - |     2.49 KB |
+| ActivitySource   | 10000      | 4             | True       | 7,750.68 us | 153.829 us | 307.214 us | 5882.8125 | 46.8750 | 47502.54 KB |
+| TraceActivityRef | 10000      | 4             | True       | 3,394.63 us |  65.616 us |  67.382 us |         - |       - |     2.52 KB |
 
 ## 💡 Usage
 
 Provide a quick example of how to use your code or run the application:
 
 ```csharp
-TODO: Add examples.
+var source = new TraceActivitySourceBuilder()
+    .SetBatchExportOptions(new BatchExportOptions())
+    // your impl for export.
+    .AddExporter(new MyExport())
+    .Build("MySource");
+
+using (var activityRef = source.Start()) 
+{
+    // your section for measurement.
+}
 ```
 
 ## Authors

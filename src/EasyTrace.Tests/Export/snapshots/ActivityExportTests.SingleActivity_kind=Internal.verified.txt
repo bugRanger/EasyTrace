@@ -1,0 +1,3 @@
+﻿[
+  TraceId: 0af7651916cd43dd8448eb211c80319c|SpanId: b7ad6b7169203331|Source: ActivityExportTests |OperationName: TestName|Kind: Internal|StartTime: 00:00:00.0000100|EndTime: 00:00:00.0000200
+]

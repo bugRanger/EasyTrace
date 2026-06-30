@@ -21,4 +21,7 @@
     <Content Include="bin\Release\net9.0\results\EasyTrace.Benchmarks.MemoryBenchmark-report-github.md" />
     <Content Include="bin\Release\net9.0\results\EasyTrace.Benchmarks.MemoryBenchmark-report.html" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EasyTrace\EasyTrace.csproj" />
+  </ItemGroup>
 </Project>
