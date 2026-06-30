@@ -25,7 +25,7 @@ public class ActivityExportTests
         // Arrange
         var inMemoryExporter = new InMemoryExport();
         var source = new TraceActivitySourceBuilder()
-            .SetTimeProvider(new MoqTimeProvider(DateTime.MinValue.ToUniversalTime()))
+            .SetTimeProvider(new MoqTimeProvider())
             .SetIdentifierGenerator(MoqIdentGenerator.Set(
                 ActivityTraceId.CreateFromString("0af7651916cd43dd8448eb211c80319c"),
                 ActivitySpanId.CreateFromString("b7ad6b7169203331")))
@@ -47,7 +47,7 @@ public class ActivityExportTests
         // Arrange
         var inMemoryExporter = new InMemoryExport();
         var source = new TraceActivitySourceBuilder()
-            .SetTimeProvider(new MoqTimeProvider(DateTime.MinValue.ToUniversalTime()))
+            .SetTimeProvider(new MoqTimeProvider())
             .SetIdentifierGenerator(MoqIdentGenerator.Set(
                 ActivityTraceId.CreateFromString("0af7651916cd43dd8448eb211c80319c"),
                 ActivitySpanId.CreateFromString("b7ad6b7169203331"),
@@ -74,7 +74,7 @@ public class ActivityExportTests
         // Arrange
         var inMemoryExporter = new InMemoryExport();
         var source = new TraceActivitySourceBuilder()
-            .SetTimeProvider(new MoqTimeProvider(DateTime.MinValue.ToUniversalTime()))
+            .SetTimeProvider(new MoqTimeProvider())
             .SetIdentifierGenerator(MoqIdentGenerator.Sequence(1))
             .SetBatchExportOptions(new BatchExportOptions
             {
@@ -102,7 +102,7 @@ public class ActivityExportTests
         // Arrange
         var inMemoryExporter = new InMemoryExport();
         var source = new TraceActivitySourceBuilder()
-            .SetTimeProvider(new MoqTimeProvider(DateTime.MinValue.ToUniversalTime()))
+            .SetTimeProvider(new MoqTimeProvider())
             .SetIdentifierGenerator(MoqIdentGenerator.Sequence(10))
             .SetBatchExportOptions(new BatchExportOptions
             {
@@ -131,7 +131,7 @@ public class ActivityExportTests
         // Arrange
         var inMemoryExporter = new InMemoryExport();
         var source = new TraceActivitySourceBuilder()
-            .SetTimeProvider(new MoqTimeProvider(DateTime.MinValue.ToUniversalTime()))
+            .SetTimeProvider(new MoqTimeProvider())
             .SetIdentifierGenerator(MoqIdentGenerator.Sequence(2))
             .SetBatchExportOptions(new BatchExportOptions
             {
@@ -161,7 +161,7 @@ public class ActivityExportTests
 
         var inMemoryExporter = new InMemoryExport();
         var source = new TraceActivitySourceBuilder()
-            .SetTimeProvider(new MoqTimeProvider(DateTime.MinValue.ToUniversalTime()))
+            .SetTimeProvider(new MoqTimeProvider())
             .SetIdentifierGenerator(MoqIdentGenerator.Sequence(2))
             .SetBatchExportOptions(new BatchExportOptions
             {

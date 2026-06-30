@@ -2,7 +2,7 @@
 
 namespace EasyTrace.Tests.TestData;
 
-public class MoqTimeProvider(DateTime startTimeInUtc) : ITraceTimeProvider
+public class MoqTimeProvider: ITraceTimeProvider
 {
     private long _ticks;
     private const long TickStep = 100;
