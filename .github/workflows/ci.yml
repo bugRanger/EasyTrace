@@ -24,6 +24,9 @@ jobs:
         cache: true
         cache-dependency-path: "**/packages.lock.json"
 
+    - name: Setup MSBuild Problem Matcher
+      uses: ammaraskar/msvc-problem-matcher@master
+
     - name: Restore dependencies
       run: dotnet restore
 
