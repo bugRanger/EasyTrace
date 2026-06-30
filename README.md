@@ -15,7 +15,7 @@ AMD Ryzen 7 5700G with Radeon Graphics 3.80GHz, 1 CPU, 16 logical and 8 physical
 .NET SDK 10.0.103
   [Host]     : .NET 9.0.13 (9.0.13, 9.0.1326.6317), X64 RyuJIT x86-64-v3
   DefaultJob : .NET 9.0.13 (9.0.13, 9.0.1326.6317), X64 RyuJIT x86-64-v3
-```
+  
 | Method           | Iterations | ParallelLimit | IsExporter | Mean        | Error      | StdDev     | Gen0      | Gen1    | Allocated   |
 |----------------- |----------- |-------------- |----------- |------------:|-----------:|-----------:|----------:|--------:|------------:|
 | ActivitySource   | 1000       | 4             | False      |    43.92 us |   0.876 us |   1.580 us |    0.3052 |       - |     2.48 KB |
@@ -26,6 +26,7 @@ AMD Ryzen 7 5700G with Radeon Graphics 3.80GHz, 1 CPU, 16 logical and 8 physical
 | TraceActivityRef | 10000      | 4             | False      |   138.12 us |   2.759 us |   3.388 us |    0.2441 |       - |     2.49 KB |
 | ActivitySource   | 10000      | 4             | True       | 7,750.68 us | 153.829 us | 307.214 us | 5882.8125 | 46.8750 | 47502.54 KB |
 | TraceActivityRef | 10000      | 4             | True       | 3,394.63 us |  65.616 us |  67.382 us |         - |       - |     2.52 KB |
+```
 
 ## 💡 Usage
 
