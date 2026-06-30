@@ -50,6 +50,6 @@ jobs:
       with:
         tool: 'benchmarkdotnet'
         output-file-path: BenchmarkDotNet.Artifacts/results/EasyTrace.Benchmarks.MemoryBenchmark-report-full-compressed.json
-        github-token: ${{ secrets.GITHUB_TOKEN }}
         fail-on-alert: true
         alert-threshold: '120%'
+        auto-push: false
