@@ -44,6 +44,6 @@ jobs:
       uses: benchmark-action/github-action-benchmark@v1
       with:
         tool: 'benchmarkdotnet'
-        output-file-path: './BenchmarkDotNet.Artifacts/results/EasyTrace.Benchmarks.MemoryBenchmark-report-full-compressed.json'
+        output-file-path: BenchmarkDotNet.Artifacts/results/EasyTrace.Benchmarks.MemoryBenchmark-report-full-compressed.json
         fail-on-alert: true
         alert-threshold: '120%'
