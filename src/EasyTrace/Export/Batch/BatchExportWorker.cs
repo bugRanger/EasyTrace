@@ -115,7 +115,7 @@ public sealed class BatchExportWorker<T> : IDisposable
             var activities = CircularBuffer.Next(MaxExportBatchSize);
             foreach (var activity in activities)
             {
-                _exporter.Export(new TraceActivityRef(activity.Source, activity));
+                _exporter.Export(new TraceActivityRef(activity));
             }
         }
     }
