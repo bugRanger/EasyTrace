@@ -53,3 +53,4 @@ jobs:
         fail-on-alert: true
         alert-threshold: '120%'
         auto-push: false
+        github-token: ${{ secrets.GITHUB_TOKEN }} 
