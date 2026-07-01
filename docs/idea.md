@@ -2,7 +2,7 @@
 * **Status:** Done
 * **Date:** 20.05.2026
 
-## 1. Motivation
+## Motivation
 
 The motivation for writing this project was the problems with the load on the garbage collector.
 
@@ -12,7 +12,7 @@ In high-load APIs with tens and hundreds of thousands of microrequests per secon
 constantly occurring. This activity generates a huge flow of short-lived data.
 This triggers partial garbage collections in Gen 0, unnecessarily consumes CPU resources, and distorts metric results.
 
-## 3. Solution
+## Solution
 
 To reduce the load on the GC, it's necessary to reuse trace objects.
 However,
@@ -26,11 +26,11 @@ to the standard Activity and doesn't provide an API for regional custom alternat
 1. Write an alternative activity that stores it in a pool;
 2. Write exporters for activity (Jaeger, etc.).
 
-## 4. Alternatives
+## Alternatives
 
 There are no other alternatives on the .NET platform.
 
-## 5. Risks and Limitations
+## Risks and Limitations
 
 - **Time and Budget:** Developing, debugging, and maintaining your own solution requires significant resources.
 - **Lag:** Ready-made solutions are updated by developers (adding new standards, fixing bugs). Your own solution will
