@@ -1,0 +1,33 @@
+name: Build and Pack NuGet
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-and-pack:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build and Pack
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          dotnet pack -c Release --no-restore -o ./artifacts /p:PackageVersion=$VERSION
+
+      - name: Upload NuGet to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*.nupkg
