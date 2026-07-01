@@ -78,7 +78,7 @@ public class MemoryBenchmark
     }
 
     [Benchmark]
-    public ulong TraceActivityRef()
+    public ulong TraceActivityScope()
     {
         _activityCounter = 0;
 
