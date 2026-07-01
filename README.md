@@ -39,7 +39,7 @@ var source = new TraceActivitySourceBuilder()
     .AddExporter(new MyExport())
     .Build("MySource");
 
-using (var activityRef = source.Start()) 
+using (var scope = source.Start()) 
 {
     // your section for measurement.
 }
