@@ -62,20 +62,25 @@ public class TraceActivitySource(string name, Version? version = null)
 
     public void Stop(TraceActivity activity)
     {
-        if (activity.EndTime == TimeSpan.Zero)
+        try
         {
-            activity.EndTime = TimeProvider.GetTimestamp();
+            if (activity.EndTime == TimeSpan.Zero)
+            {
+                activity.EndTime = TimeProvider.GetTimestamp();
+            }
+
+            Exporter?.Export(new TraceActivityRef(activity));
+
+            if (Parent == activity)
+            {
+                Parent = null;
+            }
+
+            activity.Clear();
         }
-
-        Exporter?.Export(new TraceActivityRef(activity));
-
-        if (Parent == activity)
+        finally
         {
-            Parent = null;
+            TraceActivityPool.Shared.Return(activity);
         }
-
-        activity.Clear();
-
-        TraceActivityPool.Shared.Return(activity);
     }
 }
