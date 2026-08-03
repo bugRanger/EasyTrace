@@ -83,6 +83,11 @@
           "Newtonsoft.Json": "13.0.1"
         }
       },
+      "NetCoreServer": {
+        "type": "Transitive",
+        "resolved": "8.0.7",
+        "contentHash": "BhNiJ6EVxKS1eKqlHINy7BruLDc+xCH59oZxu7d2Hve8CzFki69PumVlf6vyAQvIVfxbZiHw/FI3UHNnMajuVg=="
+      },
       "Newtonsoft.Json": {
         "type": "Transitive",
         "resolved": "13.0.1",
@@ -109,7 +114,10 @@
         }
       },
       "easytrace": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "NetCoreServer": "[8.0.7, )"
+        }
       }
     }
   }

@@ -11,4 +11,12 @@ public sealed class GroupExporter(ITraceActivityExporter[] exporters) : ITraceAc
             exporter.Export(activityRef);
         }
     }
+
+    public void Flush()
+    {
+        foreach (var exporter in exporters)
+        {
+            exporter.Flush();
+        }
+    }
 }

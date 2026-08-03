@@ -173,6 +173,11 @@
           "System.Security.Principal.Windows": "5.0.0"
         }
       },
+      "NetCoreServer": {
+        "type": "Transitive",
+        "resolved": "8.0.7",
+        "contentHash": "BhNiJ6EVxKS1eKqlHINy7BruLDc+xCH59oZxu7d2Hve8CzFki69PumVlf6vyAQvIVfxbZiHw/FI3UHNnMajuVg=="
+      },
       "Perfolizer": {
         "type": "Transitive",
         "resolved": "0.6.1",
@@ -247,7 +252,10 @@
         "contentHash": "0f1B50Ss7rqxXiaBJyzUu9bWFOO2/zSlifZ/UNMdiIpDYe4cY4LQQicP4nirK1OS31I43rn062UIJ1Q9bpmHpg=="
       },
       "easytrace": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "NetCoreServer": "[8.0.7, )"
+        }
       }
     }
   }

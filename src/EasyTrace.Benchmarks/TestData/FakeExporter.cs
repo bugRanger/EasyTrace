@@ -10,4 +10,8 @@ internal sealed class FakeExporter(Action action) : ITraceActivityExporter
     {
         action();
     }
+
+    public void Flush()
+    {
+    }
 }

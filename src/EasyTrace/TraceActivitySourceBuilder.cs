@@ -41,23 +41,20 @@ public class TraceActivitySourceBuilder
 
     public TraceActivitySource Build(string name, Version? version = null)
     {
-        ITraceActivityExporter? exporter = null;
+        BatchExporter<ITraceActivityExporter>? batchExporter = null;
 
         if (_exporters.Count > 0)
         {
-            exporter = _exporters.Count == 1 ? _exporters[0] : new GroupExporter(_exporters.ToArray());
-
-            if (_batchExportOptions != null)
-            {
-                exporter = new BatchExporter<ITraceActivityExporter>(exporter, _batchExportOptions);
-            }
+            batchExporter = new BatchExporter<ITraceActivityExporter>(
+                _exporters.Count == 1 ? _exporters[0] : new GroupExporter(_exporters.ToArray()),
+                _batchExportOptions ?? new BatchExportOptions());
         }
 
         return new TraceActivitySource(name, version)
         {
             TimeProvider = _timeProvider,
             IdentifierGenerator = _identifierGenerator,
-            Exporter = exporter,
+            BatchExporter = batchExporter,
         };
     }
 }

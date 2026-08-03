@@ -2,13 +2,14 @@
 using System.Runtime.CompilerServices;
 using EasyTrace.Activity;
 using EasyTrace.Export;
+using EasyTrace.Export.Batch;
 using EasyTrace.Identifier;
 using EasyTrace.Identifier.Generator;
 using EasyTrace.Time;
 
 namespace EasyTrace;
 
-public class TraceActivitySource(string name, Version? version = null)
+public class TraceActivitySource(string name, Version? version = null) : IDisposable
 {
     private static readonly ThreadLocal<TraceActivity?> ParentActivityByThreadLocal = new();
 
@@ -16,7 +17,9 @@ public class TraceActivitySource(string name, Version? version = null)
 
     internal ITraceTimeProvider TimeProvider { get; init; } = new TraceTimeProvider();
     internal ITraceIdentifierGenerator IdentifierGenerator { get; init; } = new Xoshiro256PlusPlus();
-    internal ITraceActivityExporter? Exporter { get; init; }
+    internal BatchExporter<ITraceActivityExporter>? BatchExporter { get; set; }
+
+    private bool _disposed;
 
     private static TraceActivity? Parent
     {
@@ -32,7 +35,7 @@ public class TraceActivitySource(string name, Version? version = null)
         [CallerMemberName] string operationName = "",
         ActivityKind kind = ActivityKind.Internal)
     {
-        if (Exporter == null)
+        if (BatchExporter == null)
         {
             return null;
         }
@@ -69,7 +72,7 @@ public class TraceActivitySource(string name, Version? version = null)
                 activity.EndTime = TimeProvider.GetTimestamp();
             }
 
-            Exporter?.Export(new TraceActivityRef(activity));
+            BatchExporter?.Append(new TraceActivityRef(activity));
 
             if (Parent == activity)
             {
@@ -82,5 +85,32 @@ public class TraceActivitySource(string name, Version? version = null)
         {
             TraceActivityPool.Shared.Return(activity);
         }
+    }
+
+    ~TraceActivitySource()
+    {
+        Dispose(false);
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    private void Dispose(bool disposing)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (disposing)
+        {
+            BatchExporter?.Dispose();
+            BatchExporter = null;
+        }
+
+        _disposed = true;
     }
 }

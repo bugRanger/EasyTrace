@@ -18,4 +18,8 @@ public class InMemoryExport : ITraceActivityExporter
             $"{nameof(ITraceActivity.StartTime)}: {activityRef.StartTime}|" +
             $"{nameof(ITraceActivity.EndTime)}: {activityRef.EndTime}");
     }
+
+    public void Flush()
+    {
+    }
 }

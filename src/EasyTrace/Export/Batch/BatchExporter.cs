@@ -2,7 +2,7 @@
 
 namespace EasyTrace.Export.Batch;
 
-public sealed class BatchExporter<T> : ITraceActivityExporter, IDisposable
+public sealed class BatchExporter<T> : IDisposable
     where T : ITraceActivityExporter
 {
     private readonly BatchExportWorker<T> _backgroundExporter;
@@ -16,7 +16,7 @@ public sealed class BatchExporter<T> : ITraceActivityExporter, IDisposable
         _backgroundExporter.Start();
     }
 
-    public void Export(scoped in TraceActivityRef activityRef)
+    public void Append(scoped in TraceActivityRef activityRef)
     {
         if (!_backgroundExporter.CircularBuffer.Push(in activityRef, 50_000))
         {
