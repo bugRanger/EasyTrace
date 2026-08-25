@@ -55,8 +55,10 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
         activity.Kind = kind;
         activity.OperationName = operationName;
         activity.SpanId.Generate(IdentifierGenerator);
-        activity.StartTime = TimeProvider.GetTimestamp();
+        activity.StartTime = TimeProvider.GetDateTime();
         activity.Recorded = true;
+        // TODO: Support mark if parent is remote.
+        activity.RemoteParent = false;
 
         Parent ??= activity;
 
@@ -67,9 +69,9 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
     {
         try
         {
-            if (activity.EndTime == TimeSpan.Zero)
+            if (activity.EndTime == DateTime.MinValue)
             {
-                activity.EndTime = TimeProvider.GetTimestamp();
+                activity.EndTime = TimeProvider.GetDateTime();
             }
 
             BatchExporter?.Append(new TraceActivityRef(activity));

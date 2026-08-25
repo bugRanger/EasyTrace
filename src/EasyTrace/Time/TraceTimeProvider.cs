@@ -9,5 +9,5 @@ public class TraceTimeProvider : ITraceTimeProvider
 
     public TimeSpan GetTimestamp() => Stopwatch.GetElapsedTime(_startTimestamp, Stopwatch.GetTimestamp());
 
-    private DateTime ToDateTime(TimeSpan duration) => _startTimeInUtc.Add(duration);
+    public DateTime GetDateTime() => _startTimeInUtc.Add(GetTimestamp());
 }

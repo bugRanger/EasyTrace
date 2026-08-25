@@ -117,6 +117,8 @@ public sealed class BatchExportWorker<T> : IDisposable
             {
                 _exporter.Export(new TraceActivityRef(activity));
             }
+            
+            _exporter.Flush();
         }
     }
 }

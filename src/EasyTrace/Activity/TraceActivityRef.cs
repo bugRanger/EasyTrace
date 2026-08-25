@@ -15,11 +15,15 @@ public readonly ref struct TraceActivityRef(TraceActivity activity)
 
     public ActivityKind Kind => activity.Kind;
 
-    public TimeSpan StartTime => activity.StartTime;
+    public DateTime StartTime => activity.StartTime;
 
-    public TimeSpan EndTime => activity.EndTime;
+    public DateTime EndTime => activity.EndTime;
 
     public TimeSpan Duration => activity.Duration;
+
+    public bool Recorded => activity.Recorded;
+
+    public bool RemoteParent => activity.RemoteParent;
 
     void ICopiable<TraceActivity>.CopyFrom(TraceActivity source)
     {
