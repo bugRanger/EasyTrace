@@ -29,6 +29,11 @@ public class ActivityExportTests
             .SetIdentifierGenerator(MoqIdentGenerator.Set(
                 ActivityTraceId.CreateFromString("0af7651916cd43dd8448eb211c80319c"),
                 ActivitySpanId.CreateFromString("b7ad6b7169203331")))
+            .SetBatchExportOptions(new BatchExportOptions
+            {
+                MaxExportBatchSize = 1,
+                ScheduledDelayMilliseconds = uint.MaxValue,
+            })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
 
@@ -38,6 +43,7 @@ public class ActivityExportTests
         }
 
         // Assert
+        Task.Delay(500).Wait();
         return Verify(inMemoryExporter.Items, Settings);
     }
 
@@ -47,10 +53,6 @@ public class ActivityExportTests
         // Arrange
         var inMemoryExporter = new InMemoryExport();
         var source = new TraceActivitySourceBuilder()
-            // .SetBatchExportOptions(new BatchExportOptions
-            // {
-            //     MaxExportBatchSize = 3,
-            // })
             .SetTimeProvider(new MoqTimeProvider())
             .SetIdentifierGenerator(MoqIdentGenerator.Set(
                 ActivityTraceId.CreateFromString("0af7651916cd43dd8448eb211c80319c"),
@@ -58,6 +60,11 @@ public class ActivityExportTests
                 ActivitySpanId.CreateFromString("b8ad6b7169203331"),
                 ActivitySpanId.CreateFromString("b9ad6b7169203331")
             ))
+            .SetBatchExportOptions(new BatchExportOptions
+            {
+                MaxExportBatchSize = 3,
+                ScheduledDelayMilliseconds = uint.MaxValue,
+            })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
 
@@ -69,6 +76,7 @@ public class ActivityExportTests
         }
 
         // Assert
+        Task.Delay(500).Wait();
         return Verify(inMemoryExporter.Items, Settings);
     }
 

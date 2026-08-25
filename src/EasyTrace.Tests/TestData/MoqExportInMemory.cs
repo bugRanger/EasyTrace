@@ -15,8 +15,8 @@ public class InMemoryExport : ITraceActivityExporter
             $"{nameof(ITraceActivity.Source)}: {activityRef.Source.Name} {activityRef.Source.Version}|" +
             $"{nameof(ITraceActivity.OperationName)}: {activityRef.OperationName}|" +
             $"{nameof(ITraceActivity.Kind)}: {activityRef.Kind}|" +
-            $"{nameof(ITraceActivity.StartTime)}: {activityRef.StartTime}|" +
-            $"{nameof(ITraceActivity.EndTime)}: {activityRef.EndTime}");
+            $"{nameof(ITraceActivity.StartTime)}: {activityRef.StartTime.TimeOfDay}|" +
+            $"{nameof(ITraceActivity.EndTime)}: {activityRef.EndTime.TimeOfDay}");
     }
 
     public void Flush()
