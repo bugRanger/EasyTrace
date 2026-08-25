@@ -7,30 +7,34 @@ namespace EasyTrace.Export.Otlp;
 public class GrpcExporter(GrpcExportParameters parameters)
     : FastHttpClient(parameters.EndPoint.Host, parameters.EndPoint.Port), ITraceActivityExporter
 {
-    [ThreadStatic] private static readonly Stack<ProtobufStream> _streamPool;
-    [ThreadStatic] private static readonly Dictionary<string, ProtobufStream> _streamBySource;
+    [ThreadStatic] private static readonly Stack<ProtobufStream> StreamPool;
+
+    [ThreadStatic] private static readonly Dictionary<TraceActivitySource, ProtobufStream> StreamBySource;
 
     static GrpcExporter()
     {
-        _streamPool = new Stack<ProtobufStream>();
-        _streamBySource = new Dictionary<string, ProtobufStream>();
+        StreamPool = new Stack<ProtobufStream>();
+        StreamBySource = new Dictionary<TraceActivitySource, ProtobufStream>();
     }
 
-    private void Send(ProtobufStream stream)
+    private void Send(TraceActivitySource source, ProtobufStream stream)
     {
-        // TODO: Add top-level elements (resources/traceData/etc).
+        // TODO: Add top-level elements (traceData/resources/etc).
+        ProtobufSerializer.WriteTrace(stream);
+        ProtobufSerializer.WriteResource(stream, source.GetResources());
+        // TODO: Add total message length (4 bytes).
         // TODO: Add send http message with content.
-        // if (!IsConnected) Connect();
-        // SendRequestBody(_buffer, 0, _buffer.Length);
+        if (!IsConnected) Connect();
+        SendRequestBody(stream.AsSpan());
     }
 
     void ITraceActivityExporter.Export(scoped in TraceActivityRef activityRef)
     {
-        if (!_streamBySource.TryGetValue(activityRef.Source.Name, out var stream))
+        if (!StreamBySource.TryGetValue(activityRef.Source, out var stream))
         {
-            stream = _streamPool.Count > 0 ? _streamPool.Pop() : new ProtobufStream(parameters.BufferSize);
-            _streamBySource[activityRef.Source.Name] = stream;
-
+            stream = StreamPool.Count > 0 ? StreamPool.Pop() : new ProtobufStream(parameters.BufferSize);
+            StreamBySource[activityRef.Source] = stream;
+            // TODO: Reserve bytes for traceData and resources.
             ProtobufSerializer.WriteSource(stream, activityRef.Source);
         }
 
@@ -39,18 +43,18 @@ public class GrpcExporter(GrpcExportParameters parameters)
 
     void ITraceActivityExporter.Flush()
     {
-        if (_streamBySource.Count == 0)
+        if (StreamBySource.Count == 0)
         {
             return;
         }
 
-        foreach (var stream in _streamBySource.Values)
+        foreach (var (source, stream) in StreamBySource)
         {
-            Send(stream);
+            Send(source, stream);
             stream.Reset();
-            _streamPool.Push(stream);
+            StreamPool.Push(stream);
         }
 
-        _streamBySource.Clear();
+        StreamBySource.Clear();
     }
 }

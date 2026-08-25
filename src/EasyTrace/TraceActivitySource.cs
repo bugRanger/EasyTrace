@@ -31,6 +31,8 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
 
     public string? Version { get; } = version?.ToString();
 
+    public IEnumerable<KeyValuePair<string, string>>? GetResources() => null;
+
     public TraceActivityScope? Start(
         [CallerMemberName] string operationName = "",
         ActivityKind kind = ActivityKind.Internal)

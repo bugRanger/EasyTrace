@@ -2,9 +2,19 @@ namespace EasyTrace.Export.Otlp.Protobuf;
 
 public class ProtobufFieldNumber
 {
-    public static readonly ProtobufFieldNumber Scope = new(1);
-    public static readonly ProtobufFieldNumber Span = new(2);
+    private readonly byte _value;
 
+    public static readonly ProtobufFieldNumber Resource = new(1);
+    public static readonly ProtobufFieldNumber ResourceSpans = new(2);
+
+    // Resource fields.
+    public static readonly ProtobufFieldNumber ResourceAttributes = new(1);
+
+    // Source fields.
+    public static readonly ProtobufFieldNumber Scope = new(1);
+    public static readonly ProtobufFieldNumber ScopeSpan = new(2);
+
+    // Activity fields.
     public static readonly ProtobufFieldNumber TraceId = new(1);
     public static readonly ProtobufFieldNumber SpanId = new(2);
     public static readonly ProtobufFieldNumber TraceState = new(3);
@@ -22,7 +32,12 @@ public class ProtobufFieldNumber
     public static readonly ProtobufFieldNumber Status = new(15);
     public static readonly ProtobufFieldNumber Flags = new(16);
     
-    private readonly byte _value;
+    // Other fields:
+    // .. KeyValue
+    internal const int Key = 1;
+    internal const int Value = 2;
+    // .. AnyValue
+    internal const int AnyValueAsString = 1;
 
     private ProtobufFieldNumber(byte value)
     {

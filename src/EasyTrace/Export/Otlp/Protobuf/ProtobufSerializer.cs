@@ -9,7 +9,33 @@ public static class ProtobufSerializer
     private const int ReserveSizeForLength = 4;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static void WriteSource(
+    public static void WriteResource(
+        ProtobufStream stream,
+        IEnumerable<KeyValuePair<string, string>>? resources)
+    {
+        stream.WriteTag(ProtobufFieldNumber.Resource, ProtobufWireType.Len);
+        var resourceLengthPosition = stream.Position;
+        stream.Reserve(ReserveSizeForLength);
+
+        if (resources != null)
+        {
+            foreach (var (attributeKey, attributeValue) in resources)
+            {
+                stream.WriteTag(ProtobufFieldNumber.ResourceAttributes, ProtobufWireType.Len);
+                var resourceAttributesLengthPosition = stream.Position;
+                stream.Reserve(ReserveSizeForLength);
+                stream.WriteKeyValueTag(attributeKey, attributeValue);
+                var resourceAttributesLength = stream.Position - (resourceAttributesLengthPosition + ReserveSizeForLength);
+                stream.WriteLength(resourceAttributesLengthPosition, resourceAttributesLength);
+            }
+        }
+
+        var resourceLength = stream.Position - (resourceLengthPosition + ReserveSizeForLength);
+        stream.WriteLength(resourceLengthPosition, resourceLength);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteSource(
         ProtobufStream stream,
         TraceActivitySource activitySource)
     {
@@ -35,7 +61,7 @@ public static class ProtobufSerializer
         ProtobufStream stream,
         scoped in TraceActivityRef activity)
     {
-        stream.WriteTag(ProtobufFieldNumber.Span, ProtobufWireType.Len);
+        stream.WriteTag(ProtobufFieldNumber.ScopeSpan, ProtobufWireType.Len);
         var spanLengthPosition = stream.Position;
         stream.Reserve(ReserveSizeForLength);
 
