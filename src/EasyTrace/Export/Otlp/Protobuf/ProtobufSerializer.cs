@@ -4,10 +4,61 @@ using EasyTrace.Activity;
 
 namespace EasyTrace.Export.Otlp.Protobuf;
 
-public static class ProtobufSerializer
+public class ProtobufSerializer(int capacity)
 {
+    private readonly ProtobufStream _stream = new(capacity);
+    private int _messageLengthPosition;
+    private int _messageStartPosition;
+    private int _traceLengthPosition;
+    private int _spansLengthPosition;
+
+    public void CreateGrpc(TraceActivitySource activitySource)
+    {
+        _stream.Reset();
+        // Grpc payload consists of 3 parts:
+        // byte 0 - Specifying if the payload is compressed.
+        // 1-4 byte - Specifies the length of payload in big endian format.
+        // 5 and above -  Protobuf serialized data.
+        _messageLengthPosition = 1;
+        _messageStartPosition = 5;
+        _stream.Reserve(_messageStartPosition);
+        // Message: Trace + Resource + Spans + [Source + [Activity]]
+        _traceLengthPosition = WriteTrace(_stream);
+        WriteResource(_stream, activitySource.GetResources());
+        _spansLengthPosition = WriteSpans(_stream);
+        WriteSource(_stream, activitySource);
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteResource(ProtobufStream stream, IEnumerable<KeyValuePair<string, string>>? resources)
+    public void Write(TraceActivityRef activityRef) => WriteActivity(_stream, activityRef);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ReadOnlySpan<byte> Flush()
+    {
+        _stream.WriteLength(_messageLengthPosition);
+        _stream.WriteLength(_traceLengthPosition);
+        _stream.WriteLength(_spansLengthPosition);
+        var bytes = _stream.AsSpan();
+        _stream.Reset(_messageStartPosition);
+        return bytes;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int WriteTrace(ProtobufStream stream)
+    {
+        stream.WriteTag(ProtobufFieldNumber.TracesData, ProtobufWireType.Len);
+        return stream.ReserveForLength();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int WriteSpans(ProtobufStream stream)
+    {
+        stream.WriteTag(ProtobufFieldNumber.ResourceSpans, ProtobufWireType.Len);
+        return stream.ReserveForLength();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void WriteResource(ProtobufStream stream, IEnumerable<KeyValuePair<string, string>>? resources)
     {
         stream.WriteTag(ProtobufFieldNumber.Resource, ProtobufWireType.Len);
         using var resourceLengthScope = stream.WriteLengthScope();
@@ -26,7 +77,7 @@ public static class ProtobufSerializer
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteSource(ProtobufStream stream, TraceActivitySource activitySource)
+    private static void WriteSource(ProtobufStream stream, TraceActivitySource activitySource)
     {
         const int sourceName = 1;
         const int sourceVersion = 2;
@@ -43,7 +94,7 @@ public static class ProtobufSerializer
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteActivity(ProtobufStream stream, scoped in TraceActivityRef activity)
+    private static void WriteActivity(ProtobufStream stream, scoped in TraceActivityRef activity)
     {
         stream.WriteTag(ProtobufFieldNumber.ScopeSpan, ProtobufWireType.Len);
         using var activityLengthScope = stream.WriteLengthScope();

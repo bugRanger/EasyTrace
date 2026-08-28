@@ -4,6 +4,10 @@ public class ProtobufFieldNumber
 {
     private readonly byte _value;
 
+    // Resource spans.
+    public static readonly ProtobufFieldNumber TracesData = new(1);
+
+    // Resource spans.
     public static readonly ProtobufFieldNumber Resource = new(1);
     public static readonly ProtobufFieldNumber ResourceSpans = new(2);
 
@@ -31,21 +35,17 @@ public class ProtobufFieldNumber
     public static readonly ProtobufFieldNumber DroppedLinksCount = new(14);
     public static readonly ProtobufFieldNumber Status = new(15);
     public static readonly ProtobufFieldNumber Flags = new(16);
-    
+
     // Other fields:
     // .. KeyValue
     internal const int Key = 1;
+
     internal const int Value = 2;
+
     // .. AnyValue
     internal const int AnyValueAsString = 1;
 
-    private ProtobufFieldNumber(byte value)
-    {
-        _value = value;
-    }
+    private ProtobufFieldNumber(byte value) => _value = value;
 
-    public static implicit operator int(ProtobufFieldNumber fieldNumber)
-    {
-        return fieldNumber._value;
-    }
+    public static implicit operator int(ProtobufFieldNumber fieldNumber) => fieldNumber._value;
 }

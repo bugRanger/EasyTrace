@@ -1,5 +1,6 @@
 ﻿using EasyTrace.Activity;
 using EasyTrace.Export.Otlp.Protobuf;
+using NetCoreServer;
 using FastHttpClient = NetCoreServer.HttpClient;
 
 namespace EasyTrace.Export.Otlp;
@@ -7,64 +8,62 @@ namespace EasyTrace.Export.Otlp;
 public class GrpcExporter(GrpcExportParameters parameters)
     : FastHttpClient(parameters.EndPoint.Host, parameters.EndPoint.Port), ITraceActivityExporter
 {
-    [ThreadStatic] private static readonly Stack<ProtobufStream> StreamPool;
+    private const string Url = "opentelemetry.proto.collector.trace.v1.TraceService/Export";
+    private const string ContentType = "application/grpc";
 
-    [ThreadStatic] private static readonly Dictionary<TraceActivitySource, ProtobufStream> StreamBySource;
+    private readonly HttpRequest _request = new(
+        "POST",
+        string.Concat(parameters.EndPoint.AbsoluteUri, Url));
+
+    private static readonly Dictionary<TraceActivitySource, ProtobufSerializer> SerializerBySource;
 
     static GrpcExporter()
     {
-        StreamPool = new Stack<ProtobufStream>();
-        StreamBySource = new Dictionary<TraceActivitySource, ProtobufStream>();
-    }
-
-    private void Send(ProtobufStream stream)
-    {
-        // TODO: Add send http message with content.
-        if (!IsConnected) Connect();
-        SendRequestBody(stream.AsSpan());
+        SerializerBySource = new Dictionary<TraceActivitySource, ProtobufSerializer>();
     }
 
     void ITraceActivityExporter.Export(scoped in TraceActivityRef activityRef)
     {
-        if (!StreamBySource.TryGetValue(activityRef.Source, out var stream))
+        if (!SerializerBySource.TryGetValue(activityRef.Source, out var serializer))
         {
-            if (!StreamPool.TryPop(out stream))
-            {
-                stream = new ProtobufStream(parameters.BufferSize);
-            }
-
-            StreamBySource[activityRef.Source] = stream;
-
-            // TODO: Add top-level elements (traceData/resources/etc).
-            // ProtobufSerializer.WriteTrace(stream);
-            ProtobufSerializer.WriteResource(stream, activityRef.Source.GetResources());
-            ProtobufSerializer.WriteSource(stream, activityRef.Source);
+            serializer = new ProtobufSerializer(parameters.BufferSize);
+            serializer.CreateGrpc(activityRef.Source);
+            SerializerBySource[activityRef.Source] = serializer;
         }
 
-        ProtobufSerializer.WriteActivity(stream, activityRef);
+        serializer.Write(activityRef);
     }
 
     void ITraceActivityExporter.Flush()
     {
-        if (StreamBySource.Count == 0)
+        if (SerializerBySource.Count == 0)
         {
             return;
         }
 
-        foreach (var (_, stream) in StreamBySource)
+        foreach (var (_, serializer) in SerializerBySource)
         {
-            try
+            var bytes = serializer.Flush();
+
+            _request.SetHeader("TE", "trailers");
+            _request.SetHeader("Content-Type", ContentType);
+            _request.SetBody(bytes);
+
+            Connect();
+
+            if (!IsConnected)
             {
-                stream.Flush();
-                Send(stream);
+                // TODO: Throw error.
+                return;
             }
-            finally
+
+            var byteCount = SendRequest(_request);
+
+            if (bytes.Length != byteCount)
             {
-                stream.Reset();
-                StreamPool.Push(stream);
+                // TODO: Throw error.
+                return;
             }
         }
-
-        StreamBySource.Clear();
     }
 }

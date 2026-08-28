@@ -1,5 +1,6 @@
 using EasyTrace.Export;
 using EasyTrace.Export.Batch;
+using EasyTrace.Export.Otlp;
 using EasyTrace.Identifier;
 using EasyTrace.Identifier.Generator;
 using EasyTrace.Time;
@@ -30,6 +31,12 @@ public class TraceActivitySourceBuilder
     public TraceActivitySourceBuilder SetBatchExportOptions(BatchExportOptions batchExportOptions)
     {
         _batchExportOptions = batchExportOptions;
+        return this;
+    }
+
+    public TraceActivitySourceBuilder AddGrpcExporter(GrpcExportParameters parameters)
+    {
+        AddExporter(new GrpcExporter(parameters));
         return this;
     }
 

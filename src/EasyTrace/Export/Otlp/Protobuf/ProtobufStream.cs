@@ -5,7 +5,7 @@ using System.Text;
 
 namespace EasyTrace.Export.Otlp.Protobuf;
 
-public class ProtobufStream
+public class ProtobufStream(int capacity)
 {
     private const int ReserveSizeForLength = 4;
     private static readonly Encoding Utf8Encoding = Encoding.UTF8;
@@ -16,39 +16,35 @@ public class ProtobufStream
     private const int MaskBitsLow = 0b_0111_1111;
     private const int MaskBitHigh = 0b_1000_0000;
 
-    private readonly byte[] _buffer;
-
-    public ProtobufStream(int capacity)
-    {
-        // Grpc payload consists of 3 parts
-        // byte 0 - Specifying if the payload is compressed.
-        // 1-4 byte - Specifies the length of payload in big endian format.
-        // 5 and above -  Protobuf serialized data.
-        _buffer = new byte[capacity];
-        Reserve(1);
-        Reserve(ReserveSizeForLength);
-    }
+    private readonly byte[] _buffer = new byte[capacity];
 
     public int Position { get; private set; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Span<byte> AsSpan() => _buffer.AsSpan(Position);
+    public Span<byte> AsSpan() => _buffer.AsSpan(0, Position);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Reserve(int length) => Position += length;
+    public int ReserveForLength() => Reserve(ReserveSizeForLength);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Flush() => WriteLength(1, Position - ReserveSizeForLength);
+    public int Reserve(int length)
+    {
+        var position = Position;
+        Position += length;
+        return position;
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Reset() => Position = ReserveSizeForLength;
+    public void Reset(int offset = 0) => Position = offset;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public LengthScope WriteLengthScope() => new(this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WriteTag(int fieldNumber, ProtobufWireType type) =>
-        WriteVarInt32(GetTagValue(fieldNumber, type));
+    public void WriteLength(int position)
+    {
+        WriteLength(position, Position - position - ReserveSizeForLength);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteLength(int position, int length)
@@ -59,6 +55,10 @@ public class ProtobufStream
         slice[2] = (byte)(((length >> 14) & MaskBitsLow) | MaskBitHigh);
         slice[3] = (byte)((length >> 21) & MaskBitsLow);
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WriteTag(int fieldNumber, ProtobufWireType type) =>
+        WriteVarInt32(GetTagValue(fieldNumber, type));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteEnumWithTag(int fieldNumber, int value)
@@ -85,7 +85,7 @@ public class ProtobufStream
     public void WriteByteArrayWithTag(int fieldNumber, ReadOnlySpan<byte> value)
     {
         WriteTag(fieldNumber, ProtobufWireType.Len);
-        WriteLength(value.Length);
+        WriteInt(value.Length);
         value.CopyTo(_buffer.AsSpan(Position));
         Position += value.Length;
     }
@@ -105,7 +105,7 @@ public class ProtobufStream
         var serializedLengthSize = ComputeVarInt64Size((ulong)numberOfUtf8CharsInString);
 
         WriteTag(ProtobufFieldNumber.Value, ProtobufWireType.Len);
-        WriteLength(numberOfUtf8CharsInString + 1 + serializedLengthSize);
+        WriteInt(numberOfUtf8CharsInString + 1 + serializedLengthSize);
 
         WriteStringWithTag(ProtobufFieldNumber.AnyValueAsString, numberOfUtf8CharsInString, value);
     }
@@ -116,10 +116,6 @@ public class ProtobufStream
         var numberOfUtf8CharsInString = GetNumberOfUtf8CharsInString(value);
         WriteStringWithTag(fieldNumber, numberOfUtf8CharsInString, value);
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static uint GetTagValue(int fieldNumber, ProtobufWireType wireType) =>
-        ((uint)(fieldNumber << 3)) | (uint)wireType;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void WriteVarInt32(uint value)
@@ -134,7 +130,7 @@ public class ProtobufStream
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void WriteLength(int length) => WriteVarInt32((uint)length);
+    private void WriteInt(int length) => WriteVarInt32((uint)length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void WriteFixed32LittleEndianFormat(uint value)
@@ -151,6 +147,24 @@ public class ProtobufStream
         BinaryPrimitives.WriteUInt64LittleEndian(span, value);
         Position += Fixed64Size;
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void WriteStringWithTag(
+        int fieldNumber,
+        int numberOfUtf8CharsInString,
+        ReadOnlySpan<char> value)
+    {
+        WriteTag(fieldNumber, ProtobufWireType.Len);
+        WriteInt(numberOfUtf8CharsInString);
+
+        var bytesWritten = Utf8Encoding.GetBytes(value, _buffer.AsSpan(Position));
+        Debug.Assert(bytesWritten == numberOfUtf8CharsInString, "bytesWritten did not match numberOfUtf8CharsInString");
+        Position += bytesWritten;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint GetTagValue(int fieldNumber, ProtobufWireType wireType) =>
+        ((uint)(fieldNumber << 3)) | (uint)wireType;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int GetNumberOfUtf8CharsInString(ReadOnlySpan<char> value)
@@ -227,20 +241,6 @@ public class ProtobufStream
         }
 
         return 10;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void WriteStringWithTag(
-        int fieldNumber,
-        int numberOfUtf8CharsInString,
-        ReadOnlySpan<char> value)
-    {
-        WriteTag(fieldNumber, ProtobufWireType.Len);
-        WriteLength(numberOfUtf8CharsInString);
-
-        var bytesWritten = Utf8Encoding.GetBytes(value, _buffer.AsSpan(Position));
-        Debug.Assert(bytesWritten == numberOfUtf8CharsInString, "bytesWritten did not match numberOfUtf8CharsInString");
-        Position += bytesWritten;
     }
 }
 
