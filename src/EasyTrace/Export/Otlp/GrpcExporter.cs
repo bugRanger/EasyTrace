@@ -17,12 +17,8 @@ public class GrpcExporter(GrpcExportParameters parameters)
         StreamBySource = new Dictionary<TraceActivitySource, ProtobufStream>();
     }
 
-    private void Send(TraceActivitySource source, ProtobufStream stream)
+    private void Send(ProtobufStream stream)
     {
-        // TODO: Add top-level elements (traceData/resources/etc).
-        ProtobufSerializer.WriteTrace(stream);
-        ProtobufSerializer.WriteResource(stream, source.GetResources());
-        // TODO: Add total message length (4 bytes).
         // TODO: Add send http message with content.
         if (!IsConnected) Connect();
         SendRequestBody(stream.AsSpan());
@@ -32,9 +28,16 @@ public class GrpcExporter(GrpcExportParameters parameters)
     {
         if (!StreamBySource.TryGetValue(activityRef.Source, out var stream))
         {
-            stream = StreamPool.Count > 0 ? StreamPool.Pop() : new ProtobufStream(parameters.BufferSize);
+            if (!StreamPool.TryPop(out stream))
+            {
+                stream = new ProtobufStream(parameters.BufferSize);
+            }
+
             StreamBySource[activityRef.Source] = stream;
-            // TODO: Reserve bytes for traceData and resources.
+
+            // TODO: Add top-level elements (traceData/resources/etc).
+            // ProtobufSerializer.WriteTrace(stream);
+            ProtobufSerializer.WriteResource(stream, activityRef.Source.GetResources());
             ProtobufSerializer.WriteSource(stream, activityRef.Source);
         }
 
@@ -48,11 +51,18 @@ public class GrpcExporter(GrpcExportParameters parameters)
             return;
         }
 
-        foreach (var (source, stream) in StreamBySource)
+        foreach (var (_, stream) in StreamBySource)
         {
-            Send(source, stream);
-            stream.Reset();
-            StreamPool.Push(stream);
+            try
+            {
+                stream.Flush();
+                Send(stream);
+            }
+            finally
+            {
+                stream.Reset();
+                StreamPool.Push(stream);
+            }
         }
 
         StreamBySource.Clear();

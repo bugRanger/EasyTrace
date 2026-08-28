@@ -6,45 +6,33 @@ namespace EasyTrace.Export.Otlp.Protobuf;
 
 public static class ProtobufSerializer
 {
-    private const int ReserveSizeForLength = 4;
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteResource(
-        ProtobufStream stream,
-        IEnumerable<KeyValuePair<string, string>>? resources)
+    public static void WriteResource(ProtobufStream stream, IEnumerable<KeyValuePair<string, string>>? resources)
     {
         stream.WriteTag(ProtobufFieldNumber.Resource, ProtobufWireType.Len);
-        var resourceLengthPosition = stream.Position;
-        stream.Reserve(ReserveSizeForLength);
+        using var resourceLengthScope = stream.WriteLengthScope();
 
-        if (resources != null)
+        if (resources == null)
         {
-            foreach (var (attributeKey, attributeValue) in resources)
-            {
-                stream.WriteTag(ProtobufFieldNumber.ResourceAttributes, ProtobufWireType.Len);
-                var resourceAttributesLengthPosition = stream.Position;
-                stream.Reserve(ReserveSizeForLength);
-                stream.WriteKeyValueTag(attributeKey, attributeValue);
-                var resourceAttributesLength = stream.Position - (resourceAttributesLengthPosition + ReserveSizeForLength);
-                stream.WriteLength(resourceAttributesLengthPosition, resourceAttributesLength);
-            }
+            return;
         }
 
-        var resourceLength = stream.Position - (resourceLengthPosition + ReserveSizeForLength);
-        stream.WriteLength(resourceLengthPosition, resourceLength);
+        foreach (var (attributeKey, attributeValue) in resources)
+        {
+            stream.WriteTag(ProtobufFieldNumber.ResourceAttributes, ProtobufWireType.Len);
+            using var attributeLengthScope = stream.WriteLengthScope();
+            stream.WriteKeyValueTag(attributeKey, attributeValue);
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteSource(
-        ProtobufStream stream,
-        TraceActivitySource activitySource)
+    public static void WriteSource(ProtobufStream stream, TraceActivitySource activitySource)
     {
         const int sourceName = 1;
         const int sourceVersion = 2;
 
         stream.WriteTag(ProtobufFieldNumber.Scope, ProtobufWireType.Len);
-        var scopeLengthPosition = stream.Position;
-        stream.Reserve(ReserveSizeForLength);
+        using var sourceLengthScope = stream.WriteLengthScope();
 
         stream.WriteStringWithTag(sourceName, activitySource.Name);
 
@@ -52,18 +40,13 @@ public static class ProtobufSerializer
         {
             stream.WriteStringWithTag(sourceVersion, activitySource.Version);
         }
-
-        stream.WriteLength(scopeLengthPosition, stream.Position - (scopeLengthPosition + ReserveSizeForLength));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteActivity(
-        ProtobufStream stream,
-        scoped in TraceActivityRef activity)
+    public static void WriteActivity(ProtobufStream stream, scoped in TraceActivityRef activity)
     {
         stream.WriteTag(ProtobufFieldNumber.ScopeSpan, ProtobufWireType.Len);
-        var spanLengthPosition = stream.Position;
-        stream.Reserve(ReserveSizeForLength);
+        using var activityLengthScope = stream.WriteLengthScope();
 
         stream.WriteByteArrayWithTag(ProtobufFieldNumber.TraceId, activity.TraceId.AsReadOnlySpan());
         stream.WriteByteArrayWithTag(ProtobufFieldNumber.SpanId, activity.SpanId.AsReadOnlySpan());
@@ -82,7 +65,6 @@ public static class ProtobufSerializer
         stream.WriteEnumWithTag(ProtobufFieldNumber.Kind, (int)activity.Kind + 1);
         stream.WriteFixed64WithTag(ProtobufFieldNumber.StartTimeUnixNano, ToUnixTimeNanoseconds(activity.StartTime));
         stream.WriteFixed64WithTag(ProtobufFieldNumber.EndTimeUnixNano, ToUnixTimeNanoseconds(activity.EndTime));
-        stream.WriteLength(spanLengthPosition, stream.Position - (spanLengthPosition + ReserveSizeForLength));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

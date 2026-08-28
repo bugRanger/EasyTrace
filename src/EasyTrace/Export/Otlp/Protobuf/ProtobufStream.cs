@@ -5,8 +5,9 @@ using System.Text;
 
 namespace EasyTrace.Export.Otlp.Protobuf;
 
-public class ProtobufStream(int capacity)
+public class ProtobufStream
 {
+    private const int ReserveSizeForLength = 4;
     private static readonly Encoding Utf8Encoding = Encoding.UTF8;
 
     private const uint UInt128 = 0x80;
@@ -15,28 +16,35 @@ public class ProtobufStream(int capacity)
     private const int MaskBitsLow = 0b_0111_1111;
     private const int MaskBitHigh = 0b_1000_0000;
 
-    private readonly byte[] _buffer = new byte[capacity];
+    private readonly byte[] _buffer;
+
+    public ProtobufStream(int capacity)
+    {
+        // Grpc payload consists of 3 parts
+        // byte 0 - Specifying if the payload is compressed.
+        // 1-4 byte - Specifies the length of payload in big endian format.
+        // 5 and above -  Protobuf serialized data.
+        _buffer = new byte[capacity];
+        Reserve(1);
+        Reserve(ReserveSizeForLength);
+    }
 
     public int Position { get; private set; }
 
-    public int Length => _buffer.Length;
-
-    public void Reset() => Position = 0;
-
-    // TODO: Add pinned length. Position in buffer for recalculate length after flush.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Pin()
-    {
-        
-    }
-
-    public void Flush()
-    {
-        
-    }
+    public Span<byte> AsSpan() => _buffer.AsSpan(Position);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reserve(int length) => Position += length;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Flush() => WriteLength(1, Position - ReserveSizeForLength);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Reset() => Position = ReserveSizeForLength;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public LengthScope WriteLengthScope() => new(this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteTag(int fieldNumber, ProtobufWireType type) =>
@@ -99,7 +107,7 @@ public class ProtobufStream(int capacity)
         WriteTag(ProtobufFieldNumber.Value, ProtobufWireType.Len);
         WriteLength(numberOfUtf8CharsInString + 1 + serializedLengthSize);
 
-        WriteStringWithTag(ProtobufFieldNumber.AnyValueAsString, numberOfUtf8CharsInString,value);
+        WriteStringWithTag(ProtobufFieldNumber.AnyValueAsString, numberOfUtf8CharsInString, value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -171,7 +179,7 @@ public class ProtobufStream(int capacity)
     /// </remarks>
     /// <param name="value">The unsigned 64-bit integer to be encoded.</param>
     /// <returns>Number of bytes needed to encode the value.</returns>
-    internal static int ComputeVarInt64Size(ulong value)
+    private static int ComputeVarInt64Size(ulong value)
     {
         if ((value & (0xffffffffffffffffL << 7)) == 0)
         {
@@ -234,6 +242,23 @@ public class ProtobufStream(int capacity)
         Debug.Assert(bytesWritten == numberOfUtf8CharsInString, "bytesWritten did not match numberOfUtf8CharsInString");
         Position += bytesWritten;
     }
+}
 
-    public Span<byte> AsSpan() => _buffer.AsSpan(Position);
+public readonly ref struct LengthScope : IDisposable
+{
+    private const int ReserveSizeForLength = 4;
+    private readonly ProtobufStream _stream;
+    private readonly int _position;
+
+    public LengthScope(ProtobufStream stream)
+    {
+        _position = stream.Position;
+        _stream = stream;
+        _stream.Reserve(ReserveSizeForLength);
+    }
+
+    public void Dispose()
+    {
+        _stream.WriteLength(_position, _stream.Position - (_position + ReserveSizeForLength));
+    }
 }
