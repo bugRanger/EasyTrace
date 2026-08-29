@@ -1,5 +1,4 @@
 ﻿using EasyTrace.Activity;
-using EasyTrace.Export.Otlp.Protobuf;
 using NetCoreServer;
 using FastHttpClient = NetCoreServer.HttpClient;
 
@@ -15,20 +14,15 @@ public class GrpcExporter(GrpcExportParameters parameters)
         "POST",
         string.Concat(parameters.EndPoint.AbsoluteUri, Url));
 
-    private static readonly Dictionary<TraceActivitySource, ProtobufSerializer> SerializerBySource;
+    private readonly Dictionary<TraceActivitySource, GrpcSerializer> _serializerBySource = new();
 
-    static GrpcExporter()
-    {
-        SerializerBySource = new Dictionary<TraceActivitySource, ProtobufSerializer>();
-    }
 
     void ITraceActivityExporter.Export(scoped in TraceActivityRef activityRef)
     {
-        if (!SerializerBySource.TryGetValue(activityRef.Source, out var serializer))
+        if (!_serializerBySource.TryGetValue(activityRef.Source, out var serializer))
         {
-            serializer = new ProtobufSerializer(parameters.BufferSize);
-            serializer.CreateGrpc(activityRef.Source);
-            SerializerBySource[activityRef.Source] = serializer;
+            serializer = GrpcSerializer.Create(parameters.BufferSize, activityRef.Source);
+            _serializerBySource[activityRef.Source] = serializer;
         }
 
         serializer.Write(activityRef);
@@ -36,12 +30,12 @@ public class GrpcExporter(GrpcExportParameters parameters)
 
     void ITraceActivityExporter.Flush()
     {
-        if (SerializerBySource.Count == 0)
+        if (_serializerBySource.Count == 0)
         {
             return;
         }
 
-        foreach (var (_, serializer) in SerializerBySource)
+        foreach (var (_, serializer) in _serializerBySource)
         {
             var bytes = serializer.Flush();
 
@@ -58,8 +52,7 @@ public class GrpcExporter(GrpcExportParameters parameters)
             }
 
             var byteCount = SendRequest(_request);
-
-            if (bytes.Length != byteCount)
+            if (byteCount == 0)
             {
                 // TODO: Throw error.
                 return;

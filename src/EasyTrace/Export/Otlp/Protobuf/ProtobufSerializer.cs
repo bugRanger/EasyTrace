@@ -4,42 +4,34 @@ using EasyTrace.Activity;
 
 namespace EasyTrace.Export.Otlp.Protobuf;
 
-public class ProtobufSerializer(int capacity)
+public class ProtobufSerializer
 {
-    private readonly ProtobufStream _stream = new(capacity);
-    private int _messageLengthPosition;
-    private int _messageStartPosition;
-    private int _traceLengthPosition;
-    private int _spansLengthPosition;
+    protected readonly ProtobufStream Stream;
+    private readonly int _traceLengthPosition;
+    private readonly int _spansLengthPosition;
+    private readonly int _messageWritePosition;
 
-    public void CreateGrpc(TraceActivitySource activitySource)
+    public ProtobufSerializer(ProtobufStream stream, TraceActivitySource activitySource)
     {
-        _stream.Reset();
-        // Grpc payload consists of 3 parts:
-        // byte 0 - Specifying if the payload is compressed.
-        // 1-4 byte - Specifies the length of payload in big endian format.
-        // 5 and above -  Protobuf serialized data.
-        _messageLengthPosition = 1;
-        _messageStartPosition = 5;
-        _stream.Reserve(_messageStartPosition);
+        Stream = stream;
         // Message: Trace + Resource + Spans + [Source + [Activity]]
-        _traceLengthPosition = WriteTrace(_stream);
-        WriteResource(_stream, activitySource.GetResources());
-        _spansLengthPosition = WriteSpans(_stream);
-        WriteSource(_stream, activitySource);
+        _traceLengthPosition = WriteTrace(Stream);
+        WriteResource(Stream, activitySource.Resources);
+        _spansLengthPosition = WriteSpans(Stream);
+        WriteSource(Stream, activitySource);
+        _messageWritePosition = Stream.Position;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Write(TraceActivityRef activityRef) => WriteActivity(_stream, activityRef);
+    public void Write(scoped in TraceActivityRef activityRef) => WriteActivity(Stream, activityRef);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ReadOnlySpan<byte> Flush()
+    public virtual ReadOnlySpan<byte> Flush()
     {
-        _stream.WriteLength(_messageLengthPosition);
-        _stream.WriteLength(_traceLengthPosition);
-        _stream.WriteLength(_spansLengthPosition);
-        var bytes = _stream.AsSpan();
-        _stream.Reset(_messageStartPosition);
+        Stream.WriteLength(_traceLengthPosition);
+        Stream.WriteLength(_spansLengthPosition);
+        var bytes = Stream.AsSpan();
+        Stream.Reset(_messageWritePosition);
         return bytes;
     }
 

@@ -133,6 +133,13 @@ public class ProtobufStream(int capacity)
     private void WriteInt(int length) => WriteVarInt32((uint)length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WriteFixed32BigEndianFormat(int position, uint value)
+    {
+        Span<byte> span = new(_buffer, position, Fixed32Size);
+        BinaryPrimitives.WriteUInt32BigEndian(span, value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void WriteFixed32LittleEndianFormat(uint value)
     {
         Span<byte> span = new(_buffer, Position, Fixed32Size);

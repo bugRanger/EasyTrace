@@ -15,6 +15,7 @@ public class TraceActivitySourceBuilder
     private BatchExportOptions? _batchExportOptions;
     private ITraceTimeProvider _timeProvider = new TraceTimeProvider();
     private ITraceIdentifierGenerator _identifierGenerator = new Xoshiro256PlusPlus();
+    private IEnumerable<KeyValuePair<string, string>> _resources = [];
 
     public TraceActivitySourceBuilder SetTimeProvider(ITraceTimeProvider timeProvider)
     {
@@ -46,6 +47,12 @@ public class TraceActivitySourceBuilder
         return this;
     }
 
+    public TraceActivitySourceBuilder SetResources(IEnumerable<KeyValuePair<string, string>> resources)
+    {
+        _resources = resources;
+        return this;
+    }
+
     public TraceActivitySource Build(string name, Version? version = null)
     {
         BatchExporter<ITraceActivityExporter>? batchExporter = null;
@@ -61,6 +68,7 @@ public class TraceActivitySourceBuilder
         {
             TimeProvider = _timeProvider,
             IdentifierGenerator = _identifierGenerator,
+            Resources = _resources,
             BatchExporter = batchExporter,
         };
     }

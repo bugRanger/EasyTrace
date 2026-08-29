@@ -123,8 +123,6 @@ class TestHttpSession(HttpServer server) : HttpSession(server)
 
             // Decode the key value
             key = Uri.UnescapeDataString(key);
-            key = key.Replace("/api/cache", "", StringComparison.InvariantCultureIgnoreCase);
-            key = key.Replace("?key=", "", StringComparison.InvariantCultureIgnoreCase);
 
             RequestCache.GetInstance().Set(key, value);
             SendResponseAsync(Response.MakeOkResponse());
