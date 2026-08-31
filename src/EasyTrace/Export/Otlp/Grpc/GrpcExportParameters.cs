@@ -1,10 +1,10 @@
-namespace EasyTrace.Export.Otlp;
+namespace EasyTrace.Export.Otlp.Grpc;
 
 public class GrpcExportParameters
 {
-    public Uri EndPoint { get; set; } = new("http://localhost:4317");
+    public Uri EndPoint { get; init; } = new("http://localhost:4317");
 
-    public int BufferSize { get; set; } = 1024;
+    public int BufferSize { get; init; } = 1024;
 
     public void Validate()
     {

@@ -17,7 +17,7 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
 
     internal ITraceTimeProvider TimeProvider { get; init; } = new TraceTimeProvider();
     internal ITraceIdentifierGenerator IdentifierGenerator { get; init; } = new Xoshiro256PlusPlus();
-    internal IEnumerable<KeyValuePair<string, string>> Resources { get; init; } = [];
+    internal KeyValuePair<string, string>[] Resources { get; init; } = [];
     internal BatchExporter<ITraceActivityExporter>? BatchExporter { get; set; }
 
     private bool _disposed;

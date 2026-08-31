@@ -1,6 +1,7 @@
 using EasyTrace.Export;
 using EasyTrace.Export.Batch;
-using EasyTrace.Export.Otlp;
+using EasyTrace.Export.Otlp.Grpc;
+using EasyTrace.Export.Otlp.Http;
 using EasyTrace.Identifier;
 using EasyTrace.Identifier.Generator;
 using EasyTrace.Time;
@@ -15,7 +16,7 @@ public class TraceActivitySourceBuilder
     private BatchExportOptions? _batchExportOptions;
     private ITraceTimeProvider _timeProvider = new TraceTimeProvider();
     private ITraceIdentifierGenerator _identifierGenerator = new Xoshiro256PlusPlus();
-    private IEnumerable<KeyValuePair<string, string>> _resources = [];
+    private KeyValuePair<string, string>[] _resources = [];
 
     public TraceActivitySourceBuilder SetTimeProvider(ITraceTimeProvider timeProvider)
     {
@@ -35,6 +36,12 @@ public class TraceActivitySourceBuilder
         return this;
     }
 
+    public TraceActivitySourceBuilder AddHttpExporter(HttpExportParameters parameters)
+    {
+        AddExporter(new HttpExporter(parameters));
+        return this;
+    }
+
     public TraceActivitySourceBuilder AddGrpcExporter(GrpcExportParameters parameters)
     {
         AddExporter(new GrpcExporter(parameters));
@@ -49,7 +56,7 @@ public class TraceActivitySourceBuilder
 
     public TraceActivitySourceBuilder SetResources(IEnumerable<KeyValuePair<string, string>> resources)
     {
-        _resources = resources;
+        _resources = [.. resources];
         return this;
     }
 

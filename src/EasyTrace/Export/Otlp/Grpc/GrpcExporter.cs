@@ -2,7 +2,7 @@
 using NetCoreServer;
 using FastHttpClient = NetCoreServer.HttpClient;
 
-namespace EasyTrace.Export.Otlp;
+namespace EasyTrace.Export.Otlp.Grpc;
 
 public class GrpcExporter(GrpcExportParameters parameters)
     : FastHttpClient(parameters.EndPoint.Host, parameters.EndPoint.Port), ITraceActivityExporter
@@ -10,12 +10,9 @@ public class GrpcExporter(GrpcExportParameters parameters)
     private const string Url = "opentelemetry.proto.collector.trace.v1.TraceService/Export";
     private const string ContentType = "application/grpc";
 
-    private readonly HttpRequest _request = new(
-        "POST",
-        string.Concat(parameters.EndPoint.AbsoluteUri, Url));
+    private readonly HttpRequest _request = new("POST", Url);
 
     private readonly Dictionary<TraceActivitySource, GrpcSerializer> _serializerBySource = new();
-
 
     void ITraceActivityExporter.Export(scoped in TraceActivityRef activityRef)
     {
@@ -35,6 +32,7 @@ public class GrpcExporter(GrpcExportParameters parameters)
             return;
         }
 
+        // TODO: Send via HTTP2 (Grpc use HTTP2) 
         foreach (var (_, serializer) in _serializerBySource)
         {
             var bytes = serializer.Flush();

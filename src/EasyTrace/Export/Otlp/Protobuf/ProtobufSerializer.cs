@@ -11,6 +11,11 @@ public class ProtobufSerializer
     private readonly int _spansLengthPosition;
     private readonly int _messageWritePosition;
 
+    public ProtobufSerializer(int capacity, TraceActivitySource activitySource)
+        : this(new ProtobufStream(capacity), activitySource)
+    {
+    }
+
     public ProtobufSerializer(ProtobufStream stream, TraceActivitySource activitySource)
     {
         Stream = stream;
@@ -50,7 +55,7 @@ public class ProtobufSerializer
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void WriteResource(ProtobufStream stream, IEnumerable<KeyValuePair<string, string>>? resources)
+    private static void WriteResource(ProtobufStream stream, KeyValuePair<string, string>[]? resources)
     {
         stream.WriteTag(ProtobufFieldNumber.Resource, ProtobufWireType.Len);
         using var resourceLengthScope = stream.WriteLengthScope();

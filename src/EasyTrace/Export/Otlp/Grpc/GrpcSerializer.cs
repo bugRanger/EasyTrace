@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using EasyTrace.Export.Otlp.Protobuf;
 
-namespace EasyTrace.Export.Otlp;
+namespace EasyTrace.Export.Otlp.Grpc;
 
 public sealed class GrpcSerializer : ProtobufSerializer
 {
