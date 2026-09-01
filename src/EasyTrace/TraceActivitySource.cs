@@ -2,9 +2,9 @@
 using System.Runtime.CompilerServices;
 using EasyTrace.Activity;
 using EasyTrace.Export;
-using EasyTrace.Export.Batch;
 using EasyTrace.Identifier;
 using EasyTrace.Identifier.Generator;
+using EasyTrace.Interceptor;
 using EasyTrace.Time;
 
 namespace EasyTrace;
@@ -18,7 +18,8 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
     internal ITraceTimeProvider TimeProvider { get; init; } = new TraceTimeProvider();
     internal ITraceIdentifierGenerator IdentifierGenerator { get; init; } = new Xoshiro256PlusPlus();
     internal KeyValuePair<string, string>[] Resources { get; init; } = [];
-    internal BatchExporter<ITraceActivityExporter>? BatchExporter { get; set; }
+    internal GroupExporter? GroupExporter { get; set; }
+    internal GroupInterceptor? GroupInterceptor { get; set; }
 
     private bool _disposed;
 
@@ -36,7 +37,7 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
         [CallerMemberName] string operationName = "",
         ActivityKind kind = ActivityKind.Internal)
     {
-        if (BatchExporter == null)
+        if (GroupExporter == null)
         {
             return null;
         }
@@ -52,16 +53,19 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
             activity.TraceId.CopyFrom(Parent.TraceId);
         }
 
+        activity.SpanId.Generate(IdentifierGenerator);
         activity.Source = this;
         activity.Kind = kind;
         activity.OperationName = operationName;
-        activity.SpanId.Generate(IdentifierGenerator);
         activity.StartTime = TimeProvider.GetDateTime();
         activity.Recorded = true;
         // TODO: Support mark if parent is remote.
         activity.RemoteParent = false;
 
         Parent ??= activity;
+
+        scoped var activityRef = new TraceActivityRef(activity);
+        GroupInterceptor?.Start(activityRef);
 
         return new TraceActivityScope(activity);
     }
@@ -75,7 +79,10 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
                 activity.EndTime = TimeProvider.GetDateTime();
             }
 
-            BatchExporter?.Append(new TraceActivityRef(activity));
+            scoped var activityRef = new TraceActivityRef(activity);
+
+            GroupInterceptor?.Stop(in activityRef);
+            GroupExporter?.Handle(in activityRef);
 
             if (Parent == activity)
             {
@@ -110,8 +117,9 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
 
         if (disposing)
         {
-            BatchExporter?.Dispose();
-            BatchExporter = null;
+            GroupExporter?.Dispose();
+            GroupExporter = null;
+            GroupInterceptor = null;
         }
 
         _disposed = true;

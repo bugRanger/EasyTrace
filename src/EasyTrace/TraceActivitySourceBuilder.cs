@@ -4,6 +4,7 @@ using EasyTrace.Export.Otlp.Grpc;
 using EasyTrace.Export.Otlp.Http;
 using EasyTrace.Identifier;
 using EasyTrace.Identifier.Generator;
+using EasyTrace.Interceptor;
 using EasyTrace.Time;
 
 namespace EasyTrace;
@@ -13,6 +14,7 @@ namespace EasyTrace;
 public class TraceActivitySourceBuilder
 {
     private readonly List<ITraceActivityExporter> _exporters = [];
+    private readonly List<ITraceActivityInterceptor> _interceptors = [];
     private BatchExportOptions? _batchExportOptions;
     private ITraceTimeProvider _timeProvider = new TraceTimeProvider();
     private ITraceIdentifierGenerator _identifierGenerator = new Xoshiro256PlusPlus();
@@ -54,6 +56,12 @@ public class TraceActivitySourceBuilder
         return this;
     }
 
+    public TraceActivitySourceBuilder AddInterceptor(ITraceActivityInterceptor interceptor)
+    {
+        _interceptors.Add(interceptor);
+        return this;
+    }
+
     public TraceActivitySourceBuilder SetResources(IEnumerable<KeyValuePair<string, string>> resources)
     {
         _resources = [.. resources];
@@ -62,13 +70,16 @@ public class TraceActivitySourceBuilder
 
     public TraceActivitySource Build(string name, Version? version = null)
     {
-        BatchExporter<ITraceActivityExporter>? batchExporter = null;
-
+        GroupExporter? groupExporter = null;
         if (_exporters.Count > 0)
         {
-            batchExporter = new BatchExporter<ITraceActivityExporter>(
-                _exporters.Count == 1 ? _exporters[0] : new GroupExporter(_exporters.ToArray()),
-                _batchExportOptions ?? new BatchExportOptions());
+            groupExporter = new GroupExporter([.. _exporters], _batchExportOptions);
+        }
+
+        GroupInterceptor? groupInterceptor = null;
+        if (_interceptors.Count > 0)
+        {
+            groupInterceptor = new GroupInterceptor(_interceptors);
         }
 
         return new TraceActivitySource(name, version)
@@ -76,7 +87,8 @@ public class TraceActivitySourceBuilder
             TimeProvider = _timeProvider,
             IdentifierGenerator = _identifierGenerator,
             Resources = _resources,
-            BatchExporter = batchExporter,
+            GroupExporter = groupExporter,
+            GroupInterceptor = groupInterceptor,
         };
     }
 }

@@ -1,9 +1,12 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using EasyTrace.Benchmarks.TestData;
+using OpenTelemetry;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 namespace EasyTrace.Benchmarks;
 
@@ -15,53 +18,27 @@ public class MemoryBenchmark
     public static void Run() => BenchmarkRunner.Run<MemoryBenchmark>();
 
     private static ActivitySource? _activitySource;
+    private static FakeProcessor? _activityProcessor;
+
     private static TraceActivitySource? _traceActivitySource;
+    private static FakeInterceptor? _traceActivityInterceptor;
 
-    private ActivityListener? _listener;
-    private ulong _activityCounter;
+    [Params(1_000)] public int Iterations { get; set; }
 
-    [Params(1_000, 10_000)] public int Iterations { get; set; }
-
-    [Params(4)] public int ParallelLimit { get; set; }
+    [Params(4, 8, 16)] public int ParallelLimit { get; set; }
 
     [Params(true, false)] public bool IsExporter { get; set; }
 
     [GlobalSetup]
     public void Setup()
     {
-        _activitySource = new ActivitySource(nameof(MemoryBenchmark));
-        if (IsExporter)
-        {
-            _listener = new ActivityListener
-            {
-                ShouldListenTo = s => s.Name == nameof(MemoryBenchmark),
-                Sample = (ref ActivityCreationOptions<ActivityContext> _) =>
-                    ActivitySamplingResult.AllData
-            };
-            _listener.ActivityStopped += _ => Interlocked.Increment(ref _activityCounter);
-            System.Diagnostics.ActivitySource.AddActivityListener(_listener);
-        }
-
-        var traceActivitySourceBuilder = new TraceActivitySourceBuilder();
-        if (IsExporter)
-        {
-            traceActivitySourceBuilder.AddExporter(new FakeExporter(() => Interlocked.Increment(ref _activityCounter)));
-        }
-
-        _traceActivitySource = traceActivitySourceBuilder.Build(nameof(MemoryBenchmark));
+        SetupActivitySource();
+        SetupTraceActivitySource();
     }
 
-    [GlobalCleanup]
-    public void Cleanup()
-    {
-        _listener?.Dispose();
-    }
-
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     public ulong ActivitySource()
     {
-        _activityCounter = 0;
-
         Parallel.For(0,
             ParallelLimit,
             i =>
@@ -74,14 +51,12 @@ public class MemoryBenchmark
                 }
             });
 
-        return Interlocked.Read(ref _activityCounter);
+        return _activityProcessor!.Started + _activityProcessor!.Stopped;
     }
 
     [Benchmark]
     public ulong TraceActivityScope()
     {
-        _activityCounter = 0;
-
         Parallel.For(0,
             ParallelLimit,
             i =>
@@ -94,6 +69,45 @@ public class MemoryBenchmark
                 }
             });
 
-        return Interlocked.Read(ref _activityCounter);
+        return _traceActivityInterceptor!.Started + _traceActivityInterceptor!.Stopped;
+    }
+
+    private void SetupActivitySource()
+    {
+        _activityProcessor = new FakeProcessor();
+        _activitySource = new ActivitySource(nameof(ExportBenchmark));
+        var builder = Sdk.CreateTracerProviderBuilder()
+            .SetResourceBuilder(ResourceBuilder.CreateDefault())
+            .AddSource(_activitySource.Name);
+
+        if (IsExporter)
+        {
+            // In their implementation, the processor acts as an exporter that listens to activity states.
+            builder.AddProcessor(_activityProcessor);
+        }
+
+        _ = builder.Build();
+    }
+
+    private void SetupTraceActivitySource()
+    {
+        _traceActivityInterceptor = new FakeInterceptor();
+
+        var builder = new TraceActivitySourceBuilder()
+            .SetResources(new Dictionary<string, string>
+            {
+                ["telemetry.sdk.name"] = "test",
+                ["telemetry.sdk.language"] = "dotnet",
+                ["telemetry.sdk.version"] = "1.0.0.0",
+                ["service.name"] = "unknown",
+            })
+            .AddInterceptor(_traceActivityInterceptor);
+
+        if (IsExporter)
+        {
+            builder.AddExporter(new FakeExporter());
+        }
+
+        _traceActivitySource = builder.Build(nameof(ExportBenchmark));
     }
 }

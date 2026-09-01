@@ -4,6 +4,7 @@ using EasyTrace.Tests.TestData;
 
 namespace EasyTrace.Tests.Export;
 
+[TestFixture]
 public class ActivityExportTests
 {
     private static readonly VerifySettings Settings;
