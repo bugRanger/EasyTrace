@@ -10,24 +10,33 @@ The goal of the repository is to offer an alternative [System.Diagnostics.Activi
 
 ### Benchmarks
 ```
+
 BenchmarkDotNet v0.15.8, Windows 10 (10.0.19045.6456/22H2/2022Update)
 AMD Ryzen 7 5700G with Radeon Graphics 3.80GHz, 1 CPU, 16 logical and 8 physical cores
-.NET SDK 10.0.103
-  [Host]     : .NET 9.0.13 (9.0.13, 9.0.1326.6317), X64 RyuJIT x86-64-v3
-  DefaultJob : .NET 9.0.13 (9.0.13, 9.0.1326.6317), X64 RyuJIT x86-64-v3
+.NET SDK 10.0.302
+  [Host]     : .NET 9.0.18 (9.0.18, 9.0.1826.31522), X64 RyuJIT x86-64-v3
+  DefaultJob : .NET 9.0.18 (9.0.18, 9.0.1826.31522), X64 RyuJIT x86-64-v3
 
-
-| Method             | Iterations | ParallelLimit | IsExporter | Mean         | Error      | StdDev     | Median       | Gen0      | Gen1    | Allocated   |
-|------------------- |----------- |-------------- |----------- |-------------:|-----------:|-----------:|-------------:|----------:|--------:|------------:|
-| ActivitySource     | 1000       | 4             | False      |    45.394 us |  0.9058 us |  2.3054 us |    45.285 us |    0.2441 |       - |     2.46 KB |
-| TraceActivityScope | 1000       | 4             | False      |     5.169 us |  0.0343 us |  0.0320 us |     5.181 us |    0.3052 |       - |      2.5 KB |
-| ActivitySource     | 1000       | 4             | True       |   698.665 us |  6.8543 us |  6.4115 us |   698.552 us |  588.8672 |  8.7891 |  4752.48 KB |
-| TraceActivityScope | 1000       | 4             | True       |   349.706 us |  6.9106 us | 15.8783 us |   341.561 us |         - |       - |     2.46 KB |
-| ActivitySource     | 10000      | 4             | False      |   377.078 us |  7.3748 us |  9.8451 us |   374.799 us |         - |       - |     2.46 KB |
-| TraceActivityScope | 10000      | 4             | False      |    25.074 us |  0.4772 us |  0.4230 us |    25.096 us |    0.2747 |       - |     2.45 KB |
-| ActivitySource     | 10000      | 4             | True       | 7,855.249 us | 74.1372 us | 69.3480 us | 7,867.755 us | 5882.8125 | 46.8750 | 47502.54 KB |
-| TraceActivityScope | 10000      | 4             | True       | 3,491.807 us | 18.0259 us | 16.8614 us | 3,494.504 us |         - |       - |     2.52 KB |
 ```
+| Method             | Iterations | ParallelLimit | IsExporter | Mean         | Error       | StdDev      | Median       | Ratio           | RatioSD | Gen0      | Gen1    | Allocated   | Alloc Ratio     |
+|------------------- |----------- |-------------- |----------- |-------------:|------------:|------------:|-------------:|----------------:|--------:|----------:|--------:|------------:|----------------:|
+| **ActivitySource**     | **1000**       | **4**             | **False**      |   **859.647 μs** |  **14.6490 μs** |  **14.3873 μs** |   **859.503 μs** |        **baseline** |        **** |  **584.9609** |  **9.7656** |  **4752.51 KB** |                **** |
+| TraceActivityScope | 1000       | 4             | False      |     5.732 μs |   0.0923 μs |   0.0864 μs |     5.724 μs | 150.017x faster |   3.27x |    0.2441 |       - |     2.48 KB | 1,912.960x less |
+|                    |            |               |            |              |             |             |              |                 |         |           |         |             |                 |
+| **ActivitySource**     | **1000**       | **4**             | **True**       | **1,006.069 μs** |  **20.0207 μs** |  **47.1912 μs** |   **988.549 μs** |        **baseline** |        **** |  **583.9844** |  **9.7656** |  **4752.52 KB** |                **** |
+| TraceActivityScope | 1000       | 4             | True       |   675.745 μs |   3.0822 μs |   2.4064 μs |   675.406 μs |    1.49x faster |   0.07x |         - |       - |     2.47 KB | 1,922.789x less |
+|                    |            |               |            |              |             |             |              |                 |         |           |         |             |                 |
+| **ActivitySource**     | **1000**       | **8**             | **False**      | **1,149.121 μs** |  **22.7164 μs** |  **21.2489 μs** | **1,149.132 μs** |        **baseline** |        **** | **1169.9219** | **31.2500** |  **9503.52 KB** |                **** |
+| TraceActivityScope | 1000       | 8             | False      |     7.893 μs |   0.1503 μs |   0.1789 μs |     7.950 μs | 145.667x faster |   4.21x |    0.2441 |       - |     3.31 KB | 2,874.921x less |
+|                    |            |               |            |              |             |             |              |                 |         |           |         |             |                 |
+| **ActivitySource**     | **1000**       | **8**             | **True**       | **1,385.054 μs** |  **24.8626 μs** |  **41.5398 μs** | **1,393.638 μs** |        **baseline** |        **** | **1169.9219** | **31.2500** |   **9503.5 KB** |                **** |
+| TraceActivityScope | 1000       | 8             | True       | 1,317.417 μs |   4.3292 μs |   4.0496 μs | 1,317.873 μs |    1.05x faster |   0.03x |         - |       - |     3.51 KB | 2,708.485x less |
+|                    |            |               |            |              |             |             |              |                 |         |           |         |             |                 |
+| **ActivitySource**     | **1000**       | **16**            | **False**      | **2,088.328 μs** |  **40.8064 μs** |  **68.1784 μs** | **2,084.663 μs** |        **baseline** |        **** | **2339.8438** | **93.7500** | **19005.54 KB** |                **** |
+| TraceActivityScope | 1000       | 16            | False      |    12.394 μs |   0.2467 μs |   0.3459 μs |    12.300 μs | 168.617x faster |   7.11x |    0.5646 |       - |     4.58 KB | 4,153.152x less |
+|                    |            |               |            |              |             |             |              |                 |         |           |         |             |                 |
+| **ActivitySource**     | **1000**       | **16**            | **True**       | **2,635.079 μs** |  **50.2578 μs** |  **41.9676 μs** | **2,619.015 μs** |        **baseline** |        **** | **2343.7500** | **89.8438** |  **19005.5 KB** |                **** |
+| TraceActivityScope | 1000       | 16            | True       | 3,923.598 μs | 133.1026 μs | 392.4561 μs | 4,024.997 μs |    1.49x slower |   0.15x |         - |       - |     5.22 KB | 3,641.773x less |
 
 ## 💡 Usage
 
