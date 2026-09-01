@@ -9,9 +9,7 @@ internal sealed class FakeInterceptor : ITraceActivityInterceptor
     private uint _startedCounter;
     private uint _stoppedCounter;
 
-    public uint Started => _startedCounter;
-
-    public uint Stopped => _stoppedCounter;
+    public uint TotalEvents => _startedCounter + _stoppedCounter;
 
     public void Start(scoped in TraceActivityRef activityRef) => Interlocked.Increment(ref _startedCounter);
 

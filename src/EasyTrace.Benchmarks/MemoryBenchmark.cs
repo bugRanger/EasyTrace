@@ -51,7 +51,7 @@ public class MemoryBenchmark
                 }
             });
 
-        return _activityProcessor!.Started + _activityProcessor!.Stopped;
+        return _activityProcessor!.TotalEvents;
     }
 
     [Benchmark]
@@ -69,7 +69,7 @@ public class MemoryBenchmark
                 }
             });
 
-        return _traceActivityInterceptor!.Started + _traceActivityInterceptor!.Stopped;
+        return _traceActivityInterceptor!.TotalEvents;
     }
 
     private void SetupActivitySource()

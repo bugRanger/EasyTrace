@@ -8,9 +8,7 @@ internal sealed class FakeProcessor : BaseProcessor<System.Diagnostics.Activity>
     private uint _startedCounter;
     private uint _stoppedCounter;
 
-    public uint Started => _startedCounter;
-
-    public uint Stopped => _stoppedCounter;
+    public uint TotalEvents => _startedCounter + _stoppedCounter;
 
     public override void OnStart(System.Diagnostics.Activity activity) => Interlocked.Increment(ref _startedCounter);
 
