@@ -70,10 +70,12 @@ public class TraceActivitySourceBuilder
 
     public TraceActivitySource Build(string name, Version? version = null)
     {
-        GroupExporter? groupExporter = null;
+        BatchExporter<ITraceActivityExporter>? batchExporter = null;
         if (_exporters.Count > 0)
         {
-            groupExporter = new GroupExporter([.. _exporters], _batchExportOptions);
+            batchExporter = new BatchExporter<ITraceActivityExporter>(
+                _exporters.Count == 1 ? _exporters[0] : new GroupExporter([.. _exporters]),
+                _batchExportOptions ?? new BatchExportOptions());
         }
 
         GroupInterceptor? groupInterceptor = null;
@@ -87,7 +89,7 @@ public class TraceActivitySourceBuilder
             TimeProvider = _timeProvider,
             IdentifierGenerator = _identifierGenerator,
             Resources = _resources,
-            GroupExporter = groupExporter,
+            BatchExporter = batchExporter,
             GroupInterceptor = groupInterceptor,
         };
     }

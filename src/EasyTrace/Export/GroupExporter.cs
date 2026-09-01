@@ -1,76 +1,22 @@
 ﻿using EasyTrace.Activity;
-using EasyTrace.Export.Batch;
 
 namespace EasyTrace.Export;
 
-public sealed class GroupExporter : ITraceActivityExporter, IDisposable
+public sealed class GroupExporter(ITraceActivityExporter[] exporters) : ITraceActivityExporter
 {
-    private readonly ITraceActivityExporter[] _exporters;
-    private BatchExporter<GroupExporter>? _batchExporter;
-    private bool _disposed;
-
-    public GroupExporter(ITraceActivityExporter[] exporters, BatchExportOptions? batchExportOptions = null)
+    public void Export(scoped in TraceActivityRef activityRef)
     {
-        _exporters = exporters;
-
-        if (batchExportOptions is not null)
-        {
-            _batchExporter = new BatchExporter<GroupExporter>(this, batchExportOptions);
-        }
-    }
-
-    public void Handle(scoped in TraceActivityRef activityRef)
-    {
-        if (_batchExporter is not null)
-        {
-            _batchExporter.Append(in activityRef);
-            return;
-        }
-
-        ((ITraceActivityExporter)this).Export(in activityRef);
-        ((ITraceActivityExporter)this).Flush();
-    }
-
-    void ITraceActivityExporter.Export(scoped in TraceActivityRef activityRef)
-    {
-        foreach (var exporter in _exporters)
+        foreach (var exporter in exporters)
         {
             exporter.Export(activityRef);
         }
     }
 
-    void ITraceActivityExporter.Flush()
+    public void Flush()
     {
-        foreach (var exporter in _exporters)
+        foreach (var exporter in exporters)
         {
             exporter.Flush();
         }
-    }
-
-    ~GroupExporter()
-    {
-        Dispose(false);
-    }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    private void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing)
-        {
-            _batchExporter?.Dispose();
-            _batchExporter = null;
-        }
-
-        _disposed = true;
     }
 }

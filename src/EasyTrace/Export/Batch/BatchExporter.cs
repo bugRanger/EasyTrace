@@ -16,7 +16,7 @@ public sealed class BatchExporter<T> : IDisposable
         _backgroundExporter.Start();
     }
 
-    public void Append(scoped in TraceActivityRef activityRef)
+    public void Handle(scoped in TraceActivityRef activityRef)
     {
         if (!_backgroundExporter.CircularBuffer.Push(in activityRef, 50_000))
         {
