@@ -10,6 +10,7 @@ using OpenTelemetry.Trace;
 
 namespace EasyTrace.Benchmarks;
 
+[BenchmarkCategory("AllowOnCI")]
 [MemoryDiagnoser]
 [JsonExporterAttribute.Full]
 [JsonExporterAttribute.FullCompressed]
@@ -75,7 +76,7 @@ public class MemoryBenchmark
     private void SetupActivitySource()
     {
         _activityProcessor = new FakeProcessor();
-        _activitySource = new ActivitySource(nameof(ExportBenchmark));
+        _activitySource = new ActivitySource(nameof(OtlpExportBenchmark));
         var builder = Sdk.CreateTracerProviderBuilder()
             .SetResourceBuilder(ResourceBuilder.CreateDefault())
             .AddSource(_activitySource.Name);
@@ -101,6 +102,6 @@ public class MemoryBenchmark
             builder.AddExporter(new FakeExporter());
         }
 
-        _traceActivitySource = builder.Build(nameof(ExportBenchmark));
+        _traceActivitySource = builder.Build(nameof(OtlpExportBenchmark));
     }
 }

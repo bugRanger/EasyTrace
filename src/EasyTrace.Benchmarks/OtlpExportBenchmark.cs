@@ -13,12 +13,19 @@ using OpenTelemetry.Trace;
 
 namespace EasyTrace.Benchmarks;
 
+/// <summary>
+/// Comparative analysis of export to a running process with export via OTLP.
+/// </summary>
+/// <remarks>
+/// This benchmark does NOT start the process that will receive data via OTLP.
+/// This process must be running before running the benchmark.  
+/// </remarks>
 [MemoryDiagnoser]
 [JsonExporterAttribute.Full]
 [JsonExporterAttribute.FullCompressed]
-public class ExportBenchmark
+public class OtlpExportBenchmark
 {
-    public static void Run() => BenchmarkRunner.Run<ExportBenchmark>();
+    public static void Run() => BenchmarkRunner.Run<OtlpExportBenchmark>();
 
     private static ActivitySource? _activitySource;
     private static FakeProcessor? _activityProcessor;
@@ -69,7 +76,7 @@ public class ExportBenchmark
     private static void SetupActivitySource()
     {
         _activityProcessor = new FakeProcessor();
-        _activitySource = new ActivitySource(nameof(ExportBenchmark));
+        _activitySource = new ActivitySource(nameof(OtlpExportBenchmark));
         _ = Sdk.CreateTracerProviderBuilder()
             .SetResourceBuilder(ResourceBuilder.CreateDefault())
             .AddSource(_activitySource.Name)
@@ -94,6 +101,6 @@ public class ExportBenchmark
             })
             .AddInterceptor(_traceActivityInterceptor)
             .AddOtlpExporter(new HttpExportParameters())
-            .Build(nameof(ExportBenchmark));
+            .Build(nameof(OtlpExportBenchmark));
     }
 }

@@ -20,7 +20,6 @@
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.18.0" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="bin\Release\net9.0\results\EasyTrace.Benchmarks.ExportBenchmark-report-github.md" />
     <Content Include="bin\Release\net9.0\results\EasyTrace.Benchmarks.MemoryBenchmark-report-github.md" />
   </ItemGroup>
   <ItemGroup>
