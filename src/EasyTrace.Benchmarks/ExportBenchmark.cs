@@ -93,7 +93,7 @@ public class ExportBenchmark
                 MaxExportBatchSize = ExportBatchSize,
             })
             .AddInterceptor(_traceActivityInterceptor)
-            .AddHttpExporter(new HttpExportParameters())
+            .AddOtlpExporter(new HttpExportParameters())
             .Build(nameof(ExportBenchmark));
     }
 }

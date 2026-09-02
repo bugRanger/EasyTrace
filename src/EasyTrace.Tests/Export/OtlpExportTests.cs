@@ -55,7 +55,7 @@ public class OtlpExportTests
                     MaxExportBatchSize = 2,
                     ScheduledDelayMilliseconds = uint.MaxValue,
                 })
-                .AddHttpExporter(new HttpExportParameters
+                .AddOtlpExporter(new HttpExportParameters
                 {
                     EndPoint = endPoint,
                     BufferSize = 1024 * 4,

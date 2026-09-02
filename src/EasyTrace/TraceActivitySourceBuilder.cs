@@ -36,15 +36,9 @@ public class TraceActivitySourceBuilder
         return this;
     }
 
-    public TraceActivitySourceBuilder AddHttpExporter(HttpExportParameters parameters)
+    public TraceActivitySourceBuilder AddOtlpExporter(HttpExportParameters parameters)
     {
         AddExporter(new HttpExporter(parameters));
-        return this;
-    }
-
-    public TraceActivitySourceBuilder AddGrpcExporter(GrpcExportParameters parameters)
-    {
-        AddExporter(new GrpcExporter(parameters));
         return this;
     }
 

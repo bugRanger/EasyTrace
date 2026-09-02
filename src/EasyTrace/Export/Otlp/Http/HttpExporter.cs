@@ -5,6 +5,9 @@ using FastHttpClient = NetCoreServer.HttpClient;
 
 namespace EasyTrace.Export.Otlp.Http;
 
+/// <summary>
+/// Export via HTTP/1.1 + Protobuf.
+/// </summary>
 public class HttpExporter(HttpExportParameters parameters)
     : FastHttpClient(parameters.EndPoint.Host, parameters.EndPoint.Port), ITraceActivityExporter
 {
@@ -46,7 +49,7 @@ public class HttpExporter(HttpExportParameters parameters)
             {
                 if (!Connect())
                 {
-                    // TODO: skip if not attempt connect. And write error in log.
+                    // TODO: Write error in log.
                     continue;
                 }
             }
@@ -54,7 +57,7 @@ public class HttpExporter(HttpExportParameters parameters)
             var byteCount = SendRequest(_request);
             if (byteCount == 0)
             {
-                // TODO: skip if not attempt connect. And write error in log.
+                // TODO: Write error in log.
                 continue;
             }
         }
