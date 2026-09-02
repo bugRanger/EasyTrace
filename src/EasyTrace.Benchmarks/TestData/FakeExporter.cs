@@ -1,13 +1,16 @@
-using System;
+﻿using System.Threading;
 using EasyTrace.Activity;
 using EasyTrace.Export;
 
 namespace EasyTrace.Benchmarks.TestData;
 
-internal sealed class FakeExporter(Action action) : ITraceActivityExporter
+internal sealed class FakeExporter : ITraceActivityExporter
 {
-    public void Export(scoped in TraceActivityRef activityRef)
+    private int _exportedCounter;
+
+    public void Export(scoped in TraceActivityRef activityRef) => Interlocked.Increment(ref _exportedCounter);
+
+    public void Flush()
     {
-        action();
     }
 }

@@ -1,6 +1,6 @@
 ﻿using EasyTrace.Activity;
 
-namespace EasyTrace.Export.Batch;
+namespace EasyTrace.Export;
 
 public sealed class GroupExporter(ITraceActivityExporter[] exporters) : ITraceActivityExporter
 {
@@ -9,6 +9,14 @@ public sealed class GroupExporter(ITraceActivityExporter[] exporters) : ITraceAc
         foreach (var exporter in exporters)
         {
             exporter.Export(activityRef);
+        }
+    }
+
+    public void Flush()
+    {
+        foreach (var exporter in exporters)
+        {
+            exporter.Flush();
         }
     }
 }

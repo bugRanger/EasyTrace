@@ -13,16 +13,17 @@ public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
     public TraceActivitySource Source { get; internal set; } = TraceActivitySource.Empty;
     public string OperationName { get; set; } = string.Empty;
     public ActivityKind Kind { get; set; }
-    public TimeSpan StartTime { get; set; }
-    public TimeSpan EndTime { get; set; }
+    public DateTime StartTime { get; set; }
+    public DateTime EndTime { get; set; }
     public TimeSpan Duration => EndTime - StartTime;
     public bool Recorded { get; set; }
+    public bool RemoteParent { get; set; }
 
     public void Clear()
     {
         OperationName = string.Empty;
-        StartTime = TimeSpan.Zero;
-        EndTime = TimeSpan.Zero;
+        StartTime = DateTime.MinValue;
+        EndTime = DateTime.MinValue;
     }
 
     public void CopyFrom(TraceActivity source)
@@ -39,6 +40,7 @@ public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
         destination.StartTime = StartTime;
         destination.EndTime = EndTime;
         destination.Recorded = Recorded;
+        destination.RemoteParent = RemoteParent;
         destination.Kind = Kind;
     }
 }

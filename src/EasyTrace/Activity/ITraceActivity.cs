@@ -10,7 +10,9 @@ public interface ITraceActivity
     TraceActivitySource Source { get; }
     string OperationName { get; }
     ActivityKind Kind { get; }
-    TimeSpan StartTime { get; }
-    TimeSpan EndTime { get; }
+    DateTime StartTime { get; }
+    DateTime EndTime { get; }
     TimeSpan Duration { get; }
+    bool Recorded { get; }
+    bool RemoteParent { get; }
 }
