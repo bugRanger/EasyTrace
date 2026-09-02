@@ -9,8 +9,6 @@ using EasyTrace.Time;
 
 namespace EasyTrace;
 
-// TODO: Configure sampler.
-// TODO: Configure/Add resources (export in Jaeger).
 public class TraceActivitySourceBuilder
 {
     private readonly List<ITraceActivityExporter> _exporters = [];
