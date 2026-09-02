@@ -94,13 +94,6 @@ public class MemoryBenchmark
         _traceActivityInterceptor = new FakeInterceptor();
 
         var builder = new TraceActivitySourceBuilder()
-            .SetResources(new Dictionary<string, string>
-            {
-                ["telemetry.sdk.name"] = "test",
-                ["telemetry.sdk.language"] = "dotnet",
-                ["telemetry.sdk.version"] = "1.0.0.0",
-                ["service.name"] = "unknown",
-            })
             .AddInterceptor(_traceActivityInterceptor);
 
         if (IsExporter)

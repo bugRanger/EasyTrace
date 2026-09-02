@@ -87,13 +87,6 @@ public class ExportBenchmark
     {
         _traceActivityInterceptor = new FakeInterceptor();
         _traceActivitySource = new TraceActivitySourceBuilder()
-            .SetResources(new Dictionary<string, string>
-            {
-                ["telemetry.sdk.name"] = "test",
-                ["telemetry.sdk.language"] = "dotnet",
-                ["telemetry.sdk.version"] = "1.0.0.0",
-                ["service.name"] = "unknown",
-            })
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxQueueSize = ExportBatchSize * 2,
