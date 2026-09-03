@@ -51,6 +51,8 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
         }
         else
         {
+            activity.Parent = Parent;
+            activity.ParentId.CopyFrom(Parent.SpanId);
             activity.TraceId.CopyFrom(Parent.TraceId);
         }
 
@@ -63,7 +65,7 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
         // TODO: Support mark if parent is remote.
         activity.RemoteParent = false;
 
-        Parent ??= activity;
+        Parent = activity;
 
         scoped var activityRef = new TraceActivityRef(activity);
         GroupInterceptor?.Start(activityRef);
@@ -80,20 +82,15 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
                 activity.EndTime = TimeProvider.GetDateTime();
             }
 
+            Parent = activity.Parent;
             scoped var activityRef = new TraceActivityRef(activity);
 
             GroupInterceptor?.Stop(in activityRef);
             BatchExporter?.Handle(in activityRef);
-
-            if (Parent == activity)
-            {
-                Parent = null;
-            }
-
-            activity.Clear();
         }
         finally
         {
+            activity.Clear();
             TraceActivityPool.Shared.Return(activity);
         }
     }

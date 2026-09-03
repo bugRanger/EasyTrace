@@ -9,6 +9,7 @@ public readonly ref struct TraceActivityRef(TraceActivity activity)
 {
     public TraceIdentifier TraceId => activity.TraceId;
     public TraceIdentifier SpanId => activity.SpanId;
+    public TraceIdentifier ParentId => activity.ParentId;
     public TraceActivitySource Source => activity.Source;
 
     public string OperationName => activity.OperationName;

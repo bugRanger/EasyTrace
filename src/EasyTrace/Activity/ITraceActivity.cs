@@ -7,6 +7,7 @@ public interface ITraceActivity
 {
     TraceIdentifier TraceId { get; }
     TraceIdentifier SpanId { get; }
+    TraceIdentifier ParentId { get; }
     TraceActivitySource Source { get; }
     string OperationName { get; }
     ActivityKind Kind { get; }

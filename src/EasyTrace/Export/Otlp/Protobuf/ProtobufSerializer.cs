@@ -99,6 +99,11 @@ public class ProtobufSerializer
         stream.WriteByteArrayWithTag(ProtobufFieldNumber.TraceId, activity.TraceId.AsReadOnlySpan());
         stream.WriteByteArrayWithTag(ProtobufFieldNumber.SpanId, activity.SpanId.AsReadOnlySpan());
 
+        if (activity.ParentId.IsNotEmpty)
+        {
+            stream.WriteByteArrayWithTag(ProtobufFieldNumber.ParentId, activity.ParentId.AsReadOnlySpan());
+        }
+
         var activityTraceFlags = activity.Recorded ? ActivityTraceFlags.Recorded : ActivityTraceFlags.None;
         var spanFlags = (uint)activityTraceFlags & 0x000000FF;
 
