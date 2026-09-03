@@ -12,7 +12,7 @@ namespace EasyTrace;
 
 public class TraceActivitySource(string name, Version? version = null) : IDisposable
 {
-    private static readonly ThreadLocal<TraceActivity?> ParentActivityByThreadLocal = new();
+    private readonly ThreadLocal<TraceActivity?> _parentActivityByThreadLocal = new();
 
     internal static readonly TraceActivitySource Empty = new(nameof(Empty));
 
@@ -24,10 +24,10 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
 
     private bool _disposed;
 
-    private static TraceActivity? Parent
+    private TraceActivity? Parent
     {
-        get => ParentActivityByThreadLocal.Value;
-        set => ParentActivityByThreadLocal.Value = value;
+        get => _parentActivityByThreadLocal.Value;
+        set => _parentActivityByThreadLocal.Value = value;
     }
 
     public string Name { get; } = name;
