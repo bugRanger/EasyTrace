@@ -38,11 +38,7 @@ public class OtlpExportTests
             // Make activity source.
             var source = new TraceActivitySourceBuilder()
                 .SetTimeProvider(new MoqTimeProvider())
-                .SetIdentifierGenerator(MoqIdentGenerator.Set(
-                    ActivityTraceId.CreateFromString("0af7651916cd43dd8448eb211c80319c"),
-                    ActivitySpanId.CreateFromString("b7ad6b7169203331"),
-                    ActivitySpanId.CreateFromString("b9ad6b7169203331")
-                ))
+                .SetIdentifierGenerator(MoqIdentGenerator.Sequence(9))
                 .SetResources(new Dictionary<string, string>
                 {
                     ["telemetry.sdk.name"] = "easytrace",
@@ -52,7 +48,7 @@ public class OtlpExportTests
                 })
                 .SetBatchExportOptions(new BatchExportOptions
                 {
-                    MaxExportBatchSize = 2,
+                    MaxExportBatchSize = 3,
                     ScheduledDelayMilliseconds = uint.MaxValue,
                 })
                 .AddOtlpExporter(new HttpExportParameters
@@ -62,11 +58,27 @@ public class OtlpExportTests
                 })
                 .Build(nameof(ActivityExportTests));
 
-            // TODO: Add more actions (x3 MaxExportBatchSize) to test splitting into multiple messages.
             // Make activity for batch export.
             {
-                using var _ = source.Start();
-                using var __ = source.Start();
+                {
+                    using (var _ = source.Start()) {}
+                    using (var _ = source.Start()) {}
+                    using (var _ = source.Start()) {}
+                }
+                Task.Delay(100).Wait();
+
+                {
+                    using var _ = source.Start();
+                    using (var __ = source.Start()) {}
+                    using (var __ = source.Start()) {}
+                }
+                Task.Delay(100).Wait();
+                
+                {
+                    using var _ = source.Start();
+                    using var __ = source.Start();
+                    using var ___ = source.Start();
+                }
                 Task.Delay(100).Wait();
             }
 
@@ -138,7 +150,13 @@ public class TestRequestCache
 
     public void Set(string key, byte[] value)
     {
-        _cache[key] = value;
+        if (_cache.TryGetValue(key, out var list))
+        {
+            list.Add(Convert.ToHexStringLower(value));
+            return;
+        }
+
+        _cache[key] = [Convert.ToHexStringLower(value)];
     }
 
     public string GetAllCache()
@@ -149,7 +167,7 @@ public class TestRequestCache
         {
             result.Append("  {\n");
             result.AppendFormat($"    \"key\": \"{item.Key}\",\n");
-            result.AppendFormat($"    \"value\": \"{string.Join(", ", item.Value)}\",\n");
+            result.AppendFormat($"    \"value\": \"{string.Join(", \n", item.Value)}\",\n");
             result.Append("  },\n");
         }
 
@@ -157,6 +175,6 @@ public class TestRequestCache
         return result.ToString();
     }
 
-    private readonly ConcurrentDictionary<string, byte[]> _cache = new();
+    private readonly ConcurrentDictionary<string, List<string>> _cache = new();
     private static TestRequestCache? _instance;
 }
