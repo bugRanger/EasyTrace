@@ -12,6 +12,7 @@ public class InMemoryExport : ITraceActivityExporter
         Items.Add(
             $"{nameof(ITraceActivity.TraceId)}: {Convert.ToHexStringLower(activityRef.TraceId.AsReadOnlySpan())}|" +
             $"{nameof(ITraceActivity.SpanId)}: {Convert.ToHexStringLower(activityRef.SpanId.AsReadOnlySpan())}|" +
+            $"{nameof(ITraceActivity.ParentId)}: {Convert.ToHexStringLower(activityRef.ParentId.AsReadOnlySpan())}|" +
             $"{nameof(ITraceActivity.Source)}: {activityRef.Source.Name} {activityRef.Source.Version}|" +
             $"{nameof(ITraceActivity.OperationName)}: {activityRef.OperationName}|" +
             $"{nameof(ITraceActivity.Kind)}: {activityRef.Kind}|" +

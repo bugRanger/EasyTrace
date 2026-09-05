@@ -15,26 +15,29 @@ public class MoqIdentGenerator(IEnumerator traceIds, IEnumerator spanIds) : ITra
     {
         const string traceIdStr = "0af7651916cd43dd8448eb211c80319c";
         const string spanIdStr = "b7ad6b7169203331";
-        const string hexCharStr = "0123456789abcdef";
+        // A maximum of 48 non-duplicate changes are allowed, after which duplicates begin.
+        // This should be sufficient for testing
+        const string saltCharStr = "0123456789abcdeffedcba987654321098765fedcba43210";
 
         var charIndex = 0;
-        // count of activities, each activity will require its own traceId and spanId.
-        activityCount *= 2;
 
         var traceIds = Enumerable.Range(0, activityCount)
             .Select(i =>
             {
                 var traceIdChars = traceIdStr.ToCharArray();
-                traceIdChars[i % 5 + 1] = hexCharStr[++charIndex % hexCharStr.Length];
-                return ActivityTraceId.CreateFromString(new string(traceIdChars));
+                var charSelected = i % traceIdStr.Length;
+                traceIdChars[charSelected == 0 ? 1 : charSelected] = saltCharStr[++charIndex % saltCharStr.Length];
+                return ActivityTraceId.CreateFromString(traceIdChars);
             })
             .ToArray();
 
+        charIndex = 0;
         var spanIds = Enumerable.Range(0, activityCount)
             .Select(i =>
             {
                 var spanIdChars = spanIdStr.ToCharArray();
-                spanIdChars[i % 5 + 1] = hexCharStr[++charIndex % hexCharStr.Length];
+                var charSelected = i % spanIdStr.Length;
+                spanIdChars[charSelected == 0 ? 1 : charSelected] = saltCharStr[++charIndex % saltCharStr.Length];
                 return ActivitySpanId.CreateFromString(spanIdChars);
             })
             .ToArray();

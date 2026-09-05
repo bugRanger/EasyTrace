@@ -1,4 +1,4 @@
 ﻿[
-  TraceId: 01f7651916cd43dd8448eb211c80319c|SpanId: b76d6b7169203331|Source: ActivityExportTests |OperationName: Child1|Kind: Internal|StartTime: 00:00:00.0000200|EndTime: 00:00:00.0000300,
-  TraceId: 01f7651916cd43dd8448eb211c80319c|SpanId: b5ad6b7169203331|Source: ActivityExportTests |OperationName: Parent|Kind: Internal|StartTime: 00:00:00.0000100|EndTime: 00:00:00.0000400
+  TraceId: 01f7651916cd43dd8448eb211c80319c|SpanId: b2ad6b7169203331|ParentId: b1ad6b7169203331|Source: ActivityExportTests |OperationName: Child1|Kind: Internal|StartTime: 00:00:00.0000200|EndTime: 00:00:00.0000300,
+  TraceId: 01f7651916cd43dd8448eb211c80319c|SpanId: b1ad6b7169203331|ParentId: |Source: ActivityExportTests |OperationName: Parent|Kind: Internal|StartTime: 00:00:00.0000100|EndTime: 00:00:00.0000400
 ]

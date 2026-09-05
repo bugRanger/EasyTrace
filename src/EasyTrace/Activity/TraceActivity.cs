@@ -10,6 +10,7 @@ public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
 
     public TraceIdentifier TraceId { get; } = TraceIdentifier.CreateTraceId();
     public TraceIdentifier SpanId { get; } = TraceIdentifier.CreateSpanId();
+    public TraceIdentifier ParentId { get; } = TraceIdentifier.CreateSpanId();
     public TraceActivitySource Source { get; internal set; } = TraceActivitySource.Empty;
     public string OperationName { get; set; } = string.Empty;
     public ActivityKind Kind { get; set; }
@@ -18,12 +19,15 @@ public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
     public TimeSpan Duration => EndTime - StartTime;
     public bool Recorded { get; set; }
     public bool RemoteParent { get; set; }
-
+    public TraceActivity? Parent { get; set; }
+    
     public void Clear()
     {
         OperationName = string.Empty;
         StartTime = DateTime.MinValue;
         EndTime = DateTime.MinValue;
+        ParentId.Clear();
+        Parent = null;
     }
 
     public void CopyFrom(TraceActivity source)
@@ -37,6 +41,7 @@ public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
         destination.OperationName = OperationName;
         destination.TraceId.CopyFrom(TraceId);
         destination.SpanId.CopyFrom(SpanId);
+        destination.ParentId.CopyFrom(ParentId);
         destination.StartTime = StartTime;
         destination.EndTime = EndTime;
         destination.Recorded = Recorded;

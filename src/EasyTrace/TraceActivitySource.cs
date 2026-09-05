@@ -12,7 +12,7 @@ namespace EasyTrace;
 
 public class TraceActivitySource(string name, Version? version = null) : IDisposable
 {
-    private static readonly ThreadLocal<TraceActivity?> ParentActivityByThreadLocal = new();
+    private readonly ThreadLocal<TraceActivity?> _parentActivityByThreadLocal = new();
 
     internal static readonly TraceActivitySource Empty = new(nameof(Empty));
 
@@ -24,10 +24,10 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
 
     private bool _disposed;
 
-    private static TraceActivity? Parent
+    private TraceActivity? Parent
     {
-        get => ParentActivityByThreadLocal.Value;
-        set => ParentActivityByThreadLocal.Value = value;
+        get => _parentActivityByThreadLocal.Value;
+        set => _parentActivityByThreadLocal.Value = value;
     }
 
     public string Name { get; } = name;
@@ -47,10 +47,14 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
 
         if (Parent == null)
         {
+            activity.Parent = null;
+            activity.ParentId.Clear();
             activity.TraceId.Generate(IdentifierGenerator);
         }
         else
         {
+            activity.Parent = Parent;
+            activity.ParentId.CopyFrom(Parent.SpanId);
             activity.TraceId.CopyFrom(Parent.TraceId);
         }
 
@@ -63,7 +67,7 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
         // TODO: Support mark if parent is remote.
         activity.RemoteParent = false;
 
-        Parent ??= activity;
+        Parent = activity;
 
         scoped var activityRef = new TraceActivityRef(activity);
         GroupInterceptor?.Start(activityRef);
@@ -80,20 +84,15 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
                 activity.EndTime = TimeProvider.GetDateTime();
             }
 
+            Parent = activity.Parent;
             scoped var activityRef = new TraceActivityRef(activity);
 
             GroupInterceptor?.Stop(in activityRef);
             BatchExporter?.Handle(in activityRef);
-
-            if (Parent == activity)
-            {
-                Parent = null;
-            }
-
-            activity.Clear();
         }
         finally
         {
+            activity.Clear();
             TraceActivityPool.Shared.Return(activity);
         }
     }
