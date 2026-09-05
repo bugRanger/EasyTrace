@@ -47,6 +47,8 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
 
         if (Parent == null)
         {
+            activity.Parent = null;
+            activity.ParentId.Clear();
             activity.TraceId.Generate(IdentifierGenerator);
         }
         else

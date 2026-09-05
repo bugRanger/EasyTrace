@@ -27,6 +27,7 @@ public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
         StartTime = DateTime.MinValue;
         EndTime = DateTime.MinValue;
         ParentId.Clear();
+        Parent = null;
     }
 
     public void CopyFrom(TraceActivity source)
