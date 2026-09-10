@@ -26,6 +26,8 @@ public readonly ref struct TraceActivityRef(TraceActivity activity)
 
     public bool RemoteParent => activity.RemoteParent;
 
+    public TraceActivityTagList Tags => activity.Tags;
+
     void ICopiable<TraceActivity>.CopyFrom(TraceActivity source)
     {
         activity.CopyFrom(source);

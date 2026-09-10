@@ -6,8 +6,6 @@ namespace EasyTrace.Activity;
 
 public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
 {
-    internal static readonly TraceActivity Empty = new();
-
     public TraceIdentifier TraceId { get; } = TraceIdentifier.CreateTraceId();
     public TraceIdentifier SpanId { get; } = TraceIdentifier.CreateSpanId();
     public TraceIdentifier ParentId { get; } = TraceIdentifier.CreateSpanId();
@@ -20,7 +18,8 @@ public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
     public bool Recorded { get; set; }
     public bool RemoteParent { get; set; }
     public TraceActivity? Parent { get; set; }
-    
+    public TraceActivityTagList Tags { get; set; } = new();
+
     public void Clear()
     {
         OperationName = string.Empty;
@@ -28,6 +27,7 @@ public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
         EndTime = DateTime.MinValue;
         ParentId.Clear();
         Parent = null;
+        Tags.Clear();
     }
 
     public void CopyFrom(TraceActivity source)
@@ -47,5 +47,6 @@ public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
         destination.Recorded = Recorded;
         destination.RemoteParent = RemoteParent;
         destination.Kind = Kind;
+        destination.Tags.CopyFrom(Tags);
     }
 }
