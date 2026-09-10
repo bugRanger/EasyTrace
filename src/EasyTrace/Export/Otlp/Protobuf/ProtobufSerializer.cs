@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using EasyTrace.Activity;
+using EasyTrace.Attribute;
 
 namespace EasyTrace.Export.Otlp.Protobuf;
 
@@ -118,6 +119,24 @@ public class ProtobufSerializer
         stream.WriteEnumWithTag(ProtobufFieldNumber.Kind, (int)activity.Kind + 1);
         stream.WriteFixed64WithTag(ProtobufFieldNumber.StartTimeUnixNano, ToUnixTimeNanoseconds(activity.StartTime));
         stream.WriteFixed64WithTag(ProtobufFieldNumber.EndTimeUnixNano, ToUnixTimeNanoseconds(activity.EndTime));
+
+        foreach (var attribute in activity.Attributes.AsSpan())
+        {
+            WriteActivityAttribute(stream, attribute);
+        }
+
+        if (activity.Attributes.Dropped > 0)
+        {
+            stream.WriteVar32WithTag(ProtobufFieldNumber.DroppedAttributesCount, activity.Attributes.Dropped);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void WriteActivityAttribute(ProtobufStream stream, TraceAttribute attribute)
+    {
+        stream.WriteTag(ProtobufFieldNumber.Attributes, ProtobufWireType.Len);
+        using var sourceLengthScope = stream.WriteLengthScope();
+        stream.WriteKeyValueTag(attribute.Name.Span, attribute.Value.Span);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

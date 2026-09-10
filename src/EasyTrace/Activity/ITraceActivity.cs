@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using EasyTrace.Attribute;
 using EasyTrace.Identifier;
 
 namespace EasyTrace.Activity;
@@ -16,4 +17,5 @@ public interface ITraceActivity
     TimeSpan Duration { get; }
     bool Recorded { get; }
     bool RemoteParent { get; }
+    TraceAttributeList Attributes { get; }
 }

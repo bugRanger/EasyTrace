@@ -2,23 +2,17 @@
 
 namespace EasyTrace.Export.Batch;
 
-public sealed class BatchExporter<T> : IDisposable
+public sealed class BatchExporter<T>(T exporter, TraceActivityFactory factory, BatchExportOptions options)
+    : IDisposable
     where T : ITraceActivityExporter
 {
-    private readonly BatchExportWorker<T> _backgroundExporter;
-    private bool _disposed;
+    private readonly BatchExportWorker<T> _backgroundExporter = new(exporter, factory, options);
 
-    public BatchExporter(T exporter, BatchExportOptions options)
-    {
-        _backgroundExporter = new BatchExportWorker<T>(exporter, options.MaxQueueSize);
-        _backgroundExporter.MaxExportBatchSize = options.MaxExportBatchSize;
-        _backgroundExporter.ScheduledDelayMilliseconds = options.ScheduledDelayMilliseconds;
-        _backgroundExporter.Start();
-    }
+    private bool _disposed;
 
     public void Handle(scoped in TraceActivityRef activityRef)
     {
-        if (!_backgroundExporter.CircularBuffer.Push(in activityRef, 50_000))
+        if (!_backgroundExporter.Push(in activityRef))
         {
             return;
         }

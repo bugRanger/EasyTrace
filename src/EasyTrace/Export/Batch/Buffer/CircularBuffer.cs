@@ -9,8 +9,8 @@ namespace EasyTrace.Export.Batch.Buffer;
 /// <remarks>
 /// The buffer does not store a reference to the object, but only rewrites its state into a free slot. 
 /// </remarks>
-public sealed class CircularBuffer<T>(uint capacity)
-    where T : class, ICopiable<T>, new()
+public sealed class CircularBuffer<T>(uint capacity, IFactory<T> factory)
+    where T : class, ICopiable<T>
 {
     private readonly CircularBufferSlot<T>?[] _slots = new CircularBufferSlot<T>[capacity];
     private ulong _head;
@@ -67,7 +67,7 @@ public sealed class CircularBuffer<T>(uint capacity)
 
             while (true)
             {
-                var slot = Volatile.Read(ref _slots[GetIndex(head)]) ?? new CircularBufferSlot<T>();
+                var slot = Volatile.Read(ref _slots[GetIndex(head)]) ?? new CircularBufferSlot<T>(factory);
                 if (!slot.IsEmpty())
                 {
                     continue;

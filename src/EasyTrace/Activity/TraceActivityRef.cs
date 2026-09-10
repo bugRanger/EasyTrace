@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using EasyTrace.Attribute;
 using EasyTrace.Export.Batch.Buffer;
 using EasyTrace.Identifier;
 
@@ -25,6 +26,8 @@ public readonly ref struct TraceActivityRef(TraceActivity activity)
     public bool Recorded => activity.Recorded;
 
     public bool RemoteParent => activity.RemoteParent;
+
+    public TraceAttributeList Attributes => activity.Attributes;
 
     void ICopiable<TraceActivity>.CopyFrom(TraceActivity source)
     {

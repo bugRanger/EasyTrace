@@ -1,3 +1,4 @@
+using EasyTrace.Activity;
 using EasyTrace.Export;
 using EasyTrace.Export.Batch;
 using EasyTrace.Export.Otlp.Grpc;
@@ -14,9 +15,16 @@ public class TraceActivitySourceBuilder
     private readonly List<ITraceActivityExporter> _exporters = [];
     private readonly List<ITraceActivityInterceptor> _interceptors = [];
     private Dictionary<string, string> _resources = GetResourceDefault();
+    private TraceActivityLimits _limits = new();
     private BatchExportOptions? _batchExportOptions;
     private ITraceTimeProvider _timeProvider = new TraceTimeProvider();
     private ITraceIdentifierGenerator _identifierGenerator = new Xoshiro256PlusPlus();
+
+    public TraceActivitySourceBuilder SetLimits(TraceActivityLimits limits)
+    {
+        _limits = limits;
+        return this;
+    }
 
     public TraceActivitySourceBuilder SetTimeProvider(ITraceTimeProvider timeProvider)
     {
@@ -38,6 +46,7 @@ public class TraceActivitySourceBuilder
 
     public TraceActivitySourceBuilder AddOtlpExporter(HttpExportParameters parameters)
     {
+        parameters.Validate();
         AddExporter(new HttpExporter(parameters));
         return this;
     }
@@ -72,11 +81,13 @@ public class TraceActivitySourceBuilder
 
     public TraceActivitySource Build(string name, Version? version = null)
     {
+        TraceActivityFactory factory = new(_limits);
         BatchExporter<ITraceActivityExporter>? batchExporter = null;
         if (_exporters.Count > 0)
         {
             batchExporter = new BatchExporter<ITraceActivityExporter>(
                 _exporters.Count == 1 ? _exporters[0] : new GroupExporter([.. _exporters]),
+                factory,
                 _batchExportOptions ?? new BatchExportOptions());
         }
 
@@ -88,6 +99,7 @@ public class TraceActivitySourceBuilder
 
         return new TraceActivitySource(name, version)
         {
+            Factory = factory,
             TimeProvider = _timeProvider,
             IdentifierGenerator = _identifierGenerator,
             Resources = [.. _resources],

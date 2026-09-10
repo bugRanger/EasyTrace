@@ -35,7 +35,7 @@ public class ProtobufSerializeTests
             .Build("TestSource");
 
         var serializer = new ProtobufSerializer(new ProtobufStream(1_024), sourceEmpty);
-        var activity = new TraceActivity
+        var activity = new TraceActivity(new TraceActivityLimits())
         {
             OperationName = "TestActivity",
             Kind = ActivityKind.Internal,
@@ -66,7 +66,7 @@ public class ProtobufSerializeTests
             .Build("TestSource");
 
         var serializer = new ProtobufSerializer(new ProtobufStream(1_024), sourceEmpty);
-        var activity = new TraceActivity
+        var activity = new TraceActivity(new TraceActivityLimits())
         {
             OperationName = "TestActivity",
             Kind = ActivityKind.Internal,
@@ -76,6 +76,63 @@ public class ProtobufSerializeTests
         };
         activity.TraceId.Generate(moqIdentGenerator);
         activity.SpanId.Generate(moqIdentGenerator);
+
+        // Act
+        serializer.Write(new TraceActivityRef(activity));
+
+        // Assert - verify snapshot.
+        return Verify(Convert.ToBase64String(serializer.Flush()), Settings);
+    }
+
+    [Test]
+    public Task ActivityWithAttributes()
+    {
+        const string attributeSymbols =
+            " !\"#$%&'()*+,-./0123456789:;<=>?@" +
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~" +
+            "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрствуфхцчшщъыьэюя" +
+            "₽$€¥©®™№★✔❌" +
+            "😀😃😄😁😆😅😂🤣";
+
+        // Arrange
+        var moqIdentGenerator = MoqIdentGenerator.Set(
+            ActivityTraceId.CreateFromString("0af7651916cd43dd8448eb211c80319c"),
+            ActivitySpanId.CreateFromString("b7ad6b7169203331"));
+
+        var sourceEmpty = new TraceActivitySourceBuilder()
+            .SetResources(new Dictionary<string, string>
+            {
+                ["telemetry.sdk.name"] = "easytrace",
+                ["telemetry.sdk.language"] = "dotnet",
+                ["telemetry.sdk.version"] = "1.0.0",
+                ["service.name"] = "unknown:dotnet",
+            })
+            .Build("TestSource");
+
+        var serializer = new ProtobufSerializer(new ProtobufStream(2_048), sourceEmpty);
+        var activity = new TraceActivity(new TraceActivityLimits
+        {
+            AttributeCount = 2,
+            AttributeNameLen = attributeSymbols.Length,
+            AttributeValueLen = attributeSymbols.Length,
+        })
+        {
+            OperationName = "TestActivity",
+            Kind = ActivityKind.Internal,
+            StartTime = DateTime.MinValue,
+            EndTime = DateTime.MinValue.AddSeconds(1),
+            Recorded = true,
+        };
+        activity.TraceId.Generate(moqIdentGenerator);
+        activity.SpanId.Generate(moqIdentGenerator);
+        // > small: name/value len.
+        var smallStr = $"{attributeSymbols.AsSpan(0, attributeSymbols.Length / 2)}";
+        activity.Attributes.Add(smallStr, smallStr);
+        // > large: name/value len.
+        var largeStr = $"{smallStr}{attributeSymbols}{smallStr}";
+        activity.Attributes.Add(largeStr, largeStr);
+        // > deopped: 1
+        activity.Attributes.Add("dropped", "1");
 
         // Act
         serializer.Write(new TraceActivityRef(activity));

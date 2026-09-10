@@ -1,8 +1,8 @@
 ﻿namespace EasyTrace.Export.Batch.Buffer;
 
 
-internal class CircularBufferSlot<T>
-    where T : class, ICopiable<T>, new()
+internal class CircularBufferSlot<T>(IFactory<T> factory)
+    where T : class, ICopiable<T>
 {
     private bool _isEmpty = true;
 
@@ -20,7 +20,7 @@ internal class CircularBufferSlot<T>
     /// <summary>
     /// Get item from the buffer.
     /// </summary>
-    public T Item { get; } = new();
+    public T Item { get; } = factory.Create();
 
     /// <summary>
     /// Copy from <see cref="value"/>

@@ -3,13 +3,8 @@
 /// <summary>
 /// <see cref="TraceActivity"/> pool to reduce GC load.
 /// </summary>
-public class TraceActivityPool(int capacity)
+public class TraceActivityPool(int capacity, TraceActivityFactory factory)
 {
-    private static readonly ThreadLocal<TraceActivityPool> ActivityPoolForThread =
-        new(() => new TraceActivityPool(256));
-
-    public static TraceActivityPool Shared => ActivityPoolForThread.Value!;
-
     private readonly Queue<TraceActivity> _queue = new(capacity);
     private TraceActivity? _fastItem;
 
@@ -17,7 +12,7 @@ public class TraceActivityPool(int capacity)
     {
         if (_fastItem == null)
         {
-            return _queue.TryDequeue(out var activity) ? activity : new TraceActivity();
+            return _queue.TryDequeue(out var activity) ? activity : factory.Create();
         }
 
         var item = _fastItem;

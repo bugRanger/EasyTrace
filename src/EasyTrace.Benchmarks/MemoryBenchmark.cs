@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 using BenchmarkDotNet.Attributes;
+using EasyTrace.Activity;
 using EasyTrace.Benchmarks.TestData;
+using EasyTrace.Export.Batch;
 using OpenTelemetry;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -24,9 +23,16 @@ public class MemoryBenchmark
     private static TraceActivitySource? _traceActivitySource;
     private static FakeInterceptor? _traceActivityInterceptor;
 
-    [Params(1_000)] public int Iterations { get; set; }
+    private const int AttributeCount = 10;
+    private static TestAttributeProvider? _traceAttributeProvider;
 
-    [Params(4, 8, 16)] public int ParallelLimit { get; set; }
+    [Params(
+        TestAttributeProvider.Int32,
+        TestAttributeProvider.Double,
+        TestAttributeProvider.String,
+        TestAttributeProvider.None
+    )]
+    public string AttributeType { get; set; }
 
     [Params(true, false)] public bool IsExporter { get; set; }
 
@@ -35,22 +41,20 @@ public class MemoryBenchmark
     {
         SetupActivitySource();
         SetupTraceActivitySource();
+
+        _traceAttributeProvider = new TestAttributeProvider(AttributeCount);
     }
 
     [Benchmark(Baseline = true)]
     public ulong ActivitySource()
     {
-        Parallel.For(0,
-            ParallelLimit,
-            i =>
-            {
-                foreach (var _ in Enumerable.Repeat(0, Iterations))
-                {
-                    using var activity1 = _activitySource!.StartActivity();
-                    using var activity2 = _activitySource!.StartActivity();
-                    using var activity3 = _activitySource!.StartActivity();
-                }
-            });
+        using var activity1 = _activitySource!.StartActivity();
+        using var activity2 = _activitySource!.StartActivity();
+        using var activity3 = _activitySource!.StartActivity();
+
+        _traceAttributeProvider!.SetTags(AttributeType, activity1);
+        _traceAttributeProvider!.SetTags(AttributeType, activity2);
+        _traceAttributeProvider!.SetTags(AttributeType, activity3);
 
         return _activityProcessor!.TotalEvents;
     }
@@ -58,17 +62,13 @@ public class MemoryBenchmark
     [Benchmark]
     public ulong TraceActivityScope()
     {
-        Parallel.For(0,
-            ParallelLimit,
-            i =>
-            {
-                foreach (var _ in Enumerable.Repeat(0, Iterations))
-                {
-                    using var activity1 = _traceActivitySource!.Start();
-                    using var activity2 = _traceActivitySource!.Start();
-                    using var activity3 = _traceActivitySource!.Start();
-                }
-            });
+        using var activity1 = _traceActivitySource!.Start();
+        using var activity2 = _traceActivitySource!.Start();
+        using var activity3 = _traceActivitySource!.Start();
+
+        _traceAttributeProvider!.SetAttributes(AttributeType, activity1);
+        _traceAttributeProvider!.SetAttributes(AttributeType, activity2);
+        _traceAttributeProvider!.SetAttributes(AttributeType, activity3);
 
         return _traceActivityInterceptor!.TotalEvents;
     }
@@ -77,6 +77,7 @@ public class MemoryBenchmark
     {
         _activityProcessor = new FakeProcessor();
         _activitySource = new ActivitySource(nameof(OtlpExportBenchmark));
+
         var builder = Sdk.CreateTracerProviderBuilder()
             .SetResourceBuilder(ResourceBuilder.CreateDefault())
             .AddSource(_activitySource.Name);
@@ -95,6 +96,15 @@ public class MemoryBenchmark
         _traceActivityInterceptor = new FakeInterceptor();
 
         var builder = new TraceActivitySourceBuilder()
+            .SetLimits(new TraceActivityLimits
+            {
+                AttributeCount = AttributeCount,
+            })
+            .SetBatchExportOptions(new BatchExportOptions
+            {
+                // Disable scheduled export, because benchmarking between Interceptor vs Processor.
+                ScheduledDelayMilliseconds = uint.MinValue,
+            })
             .AddInterceptor(_traceActivityInterceptor);
 
         if (IsExporter)
