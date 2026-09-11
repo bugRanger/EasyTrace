@@ -14,10 +14,12 @@ public sealed class TraceActivityTag
 
     internal void Write(ReadOnlySpan<char> name, ReadOnlySpan<char> value)
     {
-        name[..MaxStringLen].CopyTo(_name);
-        _nameLen = name.Length;
-        value[..MaxStringLen].CopyTo(_value);
-        _valueLen = value.Length;
+        var nameLen = Math.Min(name.Length, MaxStringLen);
+        name[..nameLen].CopyTo(_name);
+        _nameLen = nameLen;
+        var valueLen = Math.Min(value.Length, MaxStringLen);
+        value[..valueLen].CopyTo(_value);
+        _valueLen = valueLen;
     }
 
     internal void Clear()
