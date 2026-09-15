@@ -18,7 +18,7 @@ public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
     public bool Recorded { get; set; }
     public bool RemoteParent { get; set; }
     public TraceActivity? Parent { get; set; }
-    public TraceActivityTagList Tags { get; set; } = new();
+    public TraceActivityTagList Tags { get; } = new(new TraceActivityLimits());
 
     public void Clear()
     {

@@ -1,3 +1,4 @@
+using EasyTrace.Activity;
 using EasyTrace.Export;
 using EasyTrace.Export.Batch;
 using EasyTrace.Export.Otlp.Grpc;
@@ -14,9 +15,16 @@ public class TraceActivitySourceBuilder
     private readonly List<ITraceActivityExporter> _exporters = [];
     private readonly List<ITraceActivityInterceptor> _interceptors = [];
     private Dictionary<string, string> _resources = GetResourceDefault();
+    private TraceActivityLimits _limits = new();
     private BatchExportOptions? _batchExportOptions;
     private ITraceTimeProvider _timeProvider = new TraceTimeProvider();
     private ITraceIdentifierGenerator _identifierGenerator = new Xoshiro256PlusPlus();
+
+    public TraceActivitySourceBuilder SetLimits(TraceActivityLimits limits)
+    {
+        _limits = limits;
+        return this;
+    }
 
     public TraceActivitySourceBuilder SetTimeProvider(ITraceTimeProvider timeProvider)
     {
@@ -88,6 +96,7 @@ public class TraceActivitySourceBuilder
 
         return new TraceActivitySource(name, version)
         {
+            Limits = _limits,
             TimeProvider = _timeProvider,
             IdentifierGenerator = _identifierGenerator,
             Resources = [.. _resources],
