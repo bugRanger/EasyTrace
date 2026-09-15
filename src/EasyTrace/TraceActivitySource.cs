@@ -16,6 +16,7 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
 
     internal static readonly TraceActivitySource Empty = new(nameof(Empty));
 
+    internal TraceActivityLimits Limits { get; init; } = new();
     internal ITraceTimeProvider TimeProvider { get; init; } = new TraceTimeProvider();
     internal ITraceIdentifierGenerator IdentifierGenerator { get; init; } = new Xoshiro256PlusPlus();
     internal KeyValuePair<string, string>[] Resources { get; init; } = [];
@@ -66,6 +67,7 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
         activity.Recorded = true;
         // TODO: Support mark if parent is remote.
         activity.RemoteParent = false;
+        activity.Tags.Configure(Limits);
 
         Parent = activity;
 

@@ -98,7 +98,7 @@ public class ProtobufStream(int capacity)
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WriteKeyValueTag(string key, ReadOnlySpan<char> value)
+    public void WriteKeyValueTag(ReadOnlySpan<char> key, ReadOnlySpan<char> value)
     {
         WriteStringWithTag(ProtobufFieldNumber.Key, key);
         var numberOfUtf8CharsInString = GetNumberOfUtf8CharsInString(value);

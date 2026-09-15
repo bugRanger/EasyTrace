@@ -118,6 +118,24 @@ public class ProtobufSerializer
         stream.WriteEnumWithTag(ProtobufFieldNumber.Kind, (int)activity.Kind + 1);
         stream.WriteFixed64WithTag(ProtobufFieldNumber.StartTimeUnixNano, ToUnixTimeNanoseconds(activity.StartTime));
         stream.WriteFixed64WithTag(ProtobufFieldNumber.EndTimeUnixNano, ToUnixTimeNanoseconds(activity.EndTime));
+
+        foreach (var activityTag in activity.Tags.GetItems())
+        {
+            WriteActivityTag(stream, activityTag);
+        }
+
+        if (activity.Tags.Dropped > 0)
+        {
+            stream.WriteFixed32WithTag(ProtobufFieldNumber.DroppedAttributesCount, activity.Tags.Dropped);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void WriteActivityTag(ProtobufStream stream, TraceActivityTag activityTag)
+    {
+        stream.WriteTag(ProtobufFieldNumber.Attributes, ProtobufWireType.Len);
+        using var sourceLengthScope = stream.WriteLengthScope();
+        stream.WriteKeyValueTag(activityTag.Name, activityTag.Value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

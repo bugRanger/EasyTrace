@@ -16,4 +16,5 @@ public interface ITraceActivity
     TimeSpan Duration { get; }
     bool Recorded { get; }
     bool RemoteParent { get; }
+    TraceActivityTagList Tags { get; }
 }
