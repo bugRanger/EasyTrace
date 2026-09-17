@@ -71,6 +71,9 @@ var source = new TraceActivitySourceBuilder()
 
 using (var scope = source.Start()) 
 {
+    scope?.SetAttribute("tag_string", AttributeSymbols);
+    scope?.SetAttribute("tag_double", 1.123456789);
+    scope?.SetAttribute("tag_long", 123456789);
     // your section for measurement.
 }
 ```
