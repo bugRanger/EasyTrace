@@ -143,7 +143,8 @@ public sealed class BatchExportWorker<T> : IDisposable
             return;
         }
 
-        while (true)
+        var batchSize = 0ul;
+        while (batchSize < _maxExportBatchSize)
         {
             if (!_circularBuffer.Pop(out var bufferSlot))
             {
@@ -154,6 +155,7 @@ public sealed class BatchExportWorker<T> : IDisposable
             {
                 scoped var activityRef = new TraceActivityRef(bufferSlot.Item);
                 _exporter.Export(in activityRef);
+                batchSize++;
             }
             finally
             {

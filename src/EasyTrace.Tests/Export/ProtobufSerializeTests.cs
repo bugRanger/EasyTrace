@@ -131,7 +131,7 @@ public class ProtobufSerializeTests
         // > large: name/value len.
         var largeStr = $"{smallStr}{attributeSymbols}{smallStr}";
         activity.Attributes.Add(largeStr, largeStr);
-        // > deopped: 1
+        // > dropped: 1
         activity.Attributes.Add("dropped", "1");
 
         // Act
