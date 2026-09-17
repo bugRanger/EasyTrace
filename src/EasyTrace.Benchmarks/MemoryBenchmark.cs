@@ -32,7 +32,7 @@ public class MemoryBenchmark
         TestAttributeProvider.String,
         TestAttributeProvider.None
     )]
-    public string AttributeType { get; set; }
+    public string? AttributeType { get; set; }
 
     [Params(true, false)] public bool IsExporter { get; set; }
 
@@ -49,12 +49,12 @@ public class MemoryBenchmark
     public ulong ActivitySource()
     {
         using var activity1 = _activitySource!.StartActivity();
-        using var activity2 = _activitySource!.StartActivity();
-        using var activity3 = _activitySource!.StartActivity();
+        using var activity2 = _activitySource.StartActivity();
+        using var activity3 = _activitySource.StartActivity();
 
-        _traceAttributeProvider!.SetTags(AttributeType, activity1);
-        _traceAttributeProvider!.SetTags(AttributeType, activity2);
-        _traceAttributeProvider!.SetTags(AttributeType, activity3);
+        _traceAttributeProvider!.SetTags(AttributeType!, activity1);
+        _traceAttributeProvider.SetTags(AttributeType!, activity2);
+        _traceAttributeProvider.SetTags(AttributeType!, activity3);
 
         return _activityProcessor!.TotalEvents;
     }
@@ -63,12 +63,12 @@ public class MemoryBenchmark
     public ulong TraceActivityScope()
     {
         using var activity1 = _traceActivitySource!.Start();
-        using var activity2 = _traceActivitySource!.Start();
-        using var activity3 = _traceActivitySource!.Start();
+        using var activity2 = _traceActivitySource.Start();
+        using var activity3 = _traceActivitySource.Start();
 
-        _traceAttributeProvider!.SetAttributes(AttributeType, activity1);
-        _traceAttributeProvider!.SetAttributes(AttributeType, activity2);
-        _traceAttributeProvider!.SetAttributes(AttributeType, activity3);
+        _traceAttributeProvider!.SetAttributes(AttributeType!, activity1);
+        _traceAttributeProvider.SetAttributes(AttributeType!, activity2);
+        _traceAttributeProvider.SetAttributes(AttributeType!, activity3);
 
         return _traceActivityInterceptor!.TotalEvents;
     }
