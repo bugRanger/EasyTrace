@@ -143,11 +143,22 @@ public sealed class BatchExportWorker<T> : IDisposable
             return;
         }
 
-        var activities = _circularBuffer.Next(_maxExportBatchSize);
-        foreach (var activity in activities)
+        while (true)
         {
-            scoped var activityRef = new TraceActivityRef(activity);
-            _exporter.Export(in activityRef);
+            if (!_circularBuffer.Pop(out var bufferSlot))
+            {
+                break;
+            }
+
+            try
+            {
+                scoped var activityRef = new TraceActivityRef(bufferSlot.Item);
+                _exporter.Export(in activityRef);
+            }
+            finally
+            {
+                bufferSlot.Clear();
+            }
         }
 
         _exporter.Flush();

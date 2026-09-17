@@ -1,7 +1,6 @@
 ﻿namespace EasyTrace.Export.Batch.Buffer;
 
-
-internal class CircularBufferSlot<T>(IFactory<T> factory)
+public class CircularBufferSlot<T>(IFactory<T> factory)
     where T : class, ICopiable<T>
 {
     private bool _isEmpty = true;
