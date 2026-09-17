@@ -14,6 +14,10 @@ public sealed record BatchExportOptions
     /// <summary>
     /// The delay interval in milliseconds between two consecutive exports. The default value is 5000.
     /// </summary>
+    /// <remarks>
+    /// If the value is set to <see cref="uint.MinValue"/>, scheduled export is disabled.
+    /// If the value is set to <see cref="uint.MaxValue"/>, the export is performed in the calling thread.
+    /// </remarks>
     public uint ScheduledDelayMilliseconds { get; set; } = DefaultScheduledDelayMilliseconds;
 
     /// <summary>

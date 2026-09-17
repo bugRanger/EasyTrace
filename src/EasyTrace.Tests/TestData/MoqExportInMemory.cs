@@ -9,6 +9,7 @@ public class InMemoryExport : ITraceActivityExporter
 
     public void Export(scoped in TraceActivityRef activityRef)
     {
+        var attributes = activityRef.Attributes.AsSpan().ToArray();
         Items.Add(
             $"{nameof(ITraceActivity.TraceId)}: {Convert.ToHexStringLower(activityRef.TraceId.AsReadOnlySpan())}|" +
             $"{nameof(ITraceActivity.SpanId)}: {Convert.ToHexStringLower(activityRef.SpanId.AsReadOnlySpan())}|" +
@@ -17,7 +18,8 @@ public class InMemoryExport : ITraceActivityExporter
             $"{nameof(ITraceActivity.OperationName)}: {activityRef.OperationName}|" +
             $"{nameof(ITraceActivity.Kind)}: {activityRef.Kind}|" +
             $"{nameof(ITraceActivity.StartTime)}: {activityRef.StartTime.TimeOfDay}|" +
-            $"{nameof(ITraceActivity.EndTime)}: {activityRef.EndTime.TimeOfDay}");
+            $"{nameof(ITraceActivity.EndTime)}: {activityRef.EndTime.TimeOfDay}|" +
+            $"{nameof(ITraceActivity.Attributes)} ({attributes.Length}/{activityRef.Attributes.Dropped}): {string.Join(",", attributes.Select(s => $"{s.Name}: {s.Value}"))}");
     }
 
     public void Flush()

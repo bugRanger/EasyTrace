@@ -5,22 +5,12 @@ public class TraceIdentifier(int byteLength)
     private readonly byte[] _bytes = new byte[byteLength];
 
     public bool IsEmpty { get; private set; } = true;
+
     public bool IsNotEmpty => !IsEmpty;
 
     public static TraceIdentifier CreateTraceId() => new(16);
 
     public static TraceIdentifier CreateSpanId() => new(8);
-
-    public void Generate(ITraceIdentifierGenerator generator)
-    {
-        generator.Generate(_bytes.AsSpan(0, byteLength));
-        IsEmpty = false;
-    }
-
-    public void Clear()
-    {
-        IsEmpty = true;
-    }
 
     public void CopyFrom(TraceIdentifier source)
     {
@@ -36,5 +26,16 @@ public class TraceIdentifier(int byteLength)
     public bool SequenceEqual(TraceIdentifier other)
     {
         return AsReadOnlySpan().SequenceEqual(other.AsReadOnlySpan());
+    }
+
+    internal void Generate(ITraceIdentifierGenerator generator)
+    {
+        generator.Generate(_bytes.AsSpan(0, byteLength));
+        IsEmpty = false;
+    }
+
+    internal void Clear()
+    {
+        IsEmpty = true;
     }
 }

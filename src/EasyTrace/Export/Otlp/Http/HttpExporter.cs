@@ -22,6 +22,7 @@ public class HttpExporter(HttpExportParameters parameters)
     {
         if (!_serializerBySource.TryGetValue(activityRef.Source, out var serializer))
         {
+            // TODO: Add buffer size configure from builder that accounts for constraints (resource size, tag size, etc.).
             serializer = new ProtobufSerializer(parameters.BufferSize, activityRef.Source);
             _serializerBySource[activityRef.Source] = serializer;
         }

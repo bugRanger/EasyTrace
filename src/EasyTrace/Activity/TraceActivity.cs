@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using EasyTrace.Attribute;
 using EasyTrace.Export.Batch.Buffer;
 using EasyTrace.Identifier;
 
@@ -6,8 +7,12 @@ namespace EasyTrace.Activity;
 
 public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
 {
-    internal static readonly TraceActivity Empty = new();
+    public TraceActivity(TraceActivityLimits limits)
+    {
+        Attributes = new TraceAttributeList(limits.AttributeCount, limits.AttributeNameLen, limits.AttributeValueLen);
+    }
 
+    public TraceActivity? Parent { get; internal set; }
     public TraceIdentifier TraceId { get; } = TraceIdentifier.CreateTraceId();
     public TraceIdentifier SpanId { get; } = TraceIdentifier.CreateSpanId();
     public TraceIdentifier ParentId { get; } = TraceIdentifier.CreateSpanId();
@@ -19,15 +24,17 @@ public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
     public TimeSpan Duration => EndTime - StartTime;
     public bool Recorded { get; set; }
     public bool RemoteParent { get; set; }
-    public TraceActivity? Parent { get; set; }
-    
+    public TraceAttributeList Attributes { get; }
+
     public void Clear()
     {
+        Source = TraceActivitySource.Empty;
         OperationName = string.Empty;
         StartTime = DateTime.MinValue;
         EndTime = DateTime.MinValue;
         ParentId.Clear();
         Parent = null;
+        Attributes.Clear();
     }
 
     public void CopyFrom(TraceActivity source)
@@ -47,5 +54,6 @@ public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
         destination.Recorded = Recorded;
         destination.RemoteParent = RemoteParent;
         destination.Kind = Kind;
+        destination.Attributes.CopyFrom(Attributes);
     }
 }

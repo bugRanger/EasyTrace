@@ -9,8 +9,8 @@ namespace EasyTrace.Export.Batch.Buffer;
 /// <remarks>
 /// The buffer does not store a reference to the object, but only rewrites its state into a free slot. 
 /// </remarks>
-public sealed class CircularBuffer<T>(uint capacity)
-    where T : class, ICopiable<T>, new()
+public sealed class CircularBuffer<T>(uint capacity, IFactory<T> factory)
+    where T : class, ICopiable<T>
 {
     private readonly CircularBufferSlot<T>?[] _slots = new CircularBufferSlot<T>[capacity];
     private ulong _head;
@@ -67,7 +67,7 @@ public sealed class CircularBuffer<T>(uint capacity)
 
             while (true)
             {
-                var slot = Volatile.Read(ref _slots[GetIndex(head)]) ?? new CircularBufferSlot<T>();
+                var slot = Volatile.Read(ref _slots[GetIndex(head)]) ?? new CircularBufferSlot<T>(factory);
                 if (!slot.IsEmpty())
                 {
                     continue;
@@ -84,30 +84,6 @@ public sealed class CircularBuffer<T>(uint capacity)
     }
 
     /// <summary>
-    /// Reads an items from the <see cref="CircularBuffer{T}"/>.
-    /// </summary>
-    /// <remarks>
-    /// This function is not reentrant-safe, only one reader is allowed at any given time.
-    /// </remarks>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public IEnumerable<T> Next(ulong count)
-    {
-        while (count > 0)
-        {
-            if (Next(out var slot))
-            {
-                count--;
-                yield return slot.Item;
-                slot.Clear();
-            }
-            else
-            {
-                yield break;
-            }
-        }
-    }
-
-    /// <summary>
     /// Reads an item slot from the <see cref="CircularBuffer{T}"/>.
     /// </summary>
     /// <remarks>
@@ -116,7 +92,7 @@ public sealed class CircularBuffer<T>(uint capacity)
     /// <returns>
     /// Returns <c>true</c> if the item was read from the buffer successfully; <c>false</c> if the buffer is empty.
     /// </returns>
-    private bool Next([MaybeNullWhen(false)] out CircularBufferSlot<T> slot)
+    public bool Pop([MaybeNullWhen(false)] out CircularBufferSlot<T> slot)
     {
         while (true)
         {

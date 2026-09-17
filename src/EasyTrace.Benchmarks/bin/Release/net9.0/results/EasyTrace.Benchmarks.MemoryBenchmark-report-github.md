@@ -6,24 +6,31 @@ AMD Ryzen 3 2200G with Radeon Vega Graphics 3.50GHz, 1 CPU, 4 logical and 4 phys
   [Host]     : .NET 9.0.14 (9.0.14, 9.0.1426.11910), X64 RyuJIT x86-64-v3
   DefaultJob : .NET 9.0.14 (9.0.14, 9.0.1426.11910), X64 RyuJIT x86-64-v3
 
+Categories=AllowOnCI  
 
 ```
-| Method             | Iterations | ParallelLimit | IsExporter | Mean        | Error      | StdDev     | Ratio           | RatioSD | Gen0      | Allocated   | Alloc Ratio     |
-|------------------- |----------- |-------------- |----------- |------------:|-----------:|-----------:|----------------:|--------:|----------:|------------:|----------------:|
-| **ActivitySource**     | **1000**       | **4**             | **False**      | **1,780.34 μs** |  **31.973 μs** |  **28.343 μs** |        **baseline** |        **** | **2345.7031** |  **4752.46 KB** |                **** |
-| TraceActivityScope | 1000       | 4             | False      |    11.83 μs |   0.208 μs |   0.194 μs | 150.554x faster |   3.31x |    1.0681 |     2.16 KB | 2,205.036x less |
-|                    |            |               |            |             |            |            |                 |         |           |             |                 |
-| **ActivitySource**     | **1000**       | **4**             | **True**       | **1,899.03 μs** |  **37.965 μs** |  **43.720 μs** |        **baseline** |        **** | **2343.7500** |  **4752.46 KB** |                **** |
-| TraceActivityScope | 1000       | 4             | True       | 1,839.84 μs |  35.923 μs |  53.769 μs |    1.03x faster |   0.04x |         - |     3.73 KB | 1,273.290x less |
-|                    |            |               |            |             |            |            |                 |         |           |             |                 |
-| **ActivitySource**     | **1000**       | **8**             | **False**      | **3,714.61 μs** |  **72.337 μs** |  **96.568 μs** |        **baseline** |        **** | **4683.5938** |   **9502.8 KB** |                **** |
-| TraceActivityScope | 1000       | 8             | False      |    17.41 μs |   0.246 μs |   0.205 μs | 213.402x faster |   5.95x |    1.1597 |     2.35 KB | 4,041.059x less |
-|                    |            |               |            |             |            |            |                 |         |           |             |                 |
-| **ActivitySource**     | **1000**       | **8**             | **True**       | **4,131.53 μs** |  **81.874 μs** | **114.776 μs** |        **baseline** |        **** | **4679.6875** |   **9502.7 KB** |                **** |
-| TraceActivityScope | 1000       | 8             | True       | 3,327.28 μs |  64.202 μs |  81.195 μs |    1.24x faster |   0.05x |         - |     4.53 KB | 2,098.958x less |
-|                    |            |               |            |             |            |            |                 |         |           |             |                 |
-| **ActivitySource**     | **1000**       | **16**            | **False**      | **7,640.13 μs** | **115.598 μs** | **102.475 μs** |        **baseline** |        **** | **9367.1875** | **19003.47 KB** |                **** |
-| TraceActivityScope | 1000       | 16            | False      |    26.51 μs |   0.521 μs |   0.913 μs | 288.534x faster |  10.53x |    1.2817 |     2.64 KB | 7,209.911x less |
-|                    |            |               |            |             |            |            |                 |         |           |             |                 |
-| **ActivitySource**     | **1000**       | **16**            | **True**       | **8,312.79 μs** | **161.504 μs** | **198.342 μs** |        **baseline** |        **** | **9359.3750** | **19003.05 KB** |                **** |
-| TraceActivityScope | 1000       | 16            | True       | 6,747.51 μs | 114.312 μs | 106.928 μs |    1.23x faster |   0.03x |         - |     6.88 KB | 2,762.510x less |
+| Method             | AttributeType | IsExporter | Mean        | Error     | StdDev    | Ratio           | RatioSD | Gen0   | Allocated | Alloc Ratio |
+|------------------- |-------------- |----------- |------------:|----------:|----------:|----------------:|--------:|-------:|----------:|------------:|
+| **ActivitySource**     | **-**             | **False**      |   **970.66 ns** | **13.600 ns** | **11.356 ns** |        **baseline** |        **** | **0.5798** |    **1216 B** |            **** |
+| TraceActivityScope | -             | False      |    14.83 ns |  0.256 ns |  0.239 ns |   65.47x faster |   1.27x |      - |         - |          NA |
+|                    |               |            |             |           |           |                 |         |        |           |             |
+| **ActivitySource**     | **-**             | **True**       |   **976.52 ns** | **15.535 ns** | **12.972 ns** |        **baseline** |        **** | **0.5798** |    **1216 B** |            **** |
+| TraceActivityScope | -             | True       |   502.57 ns |  9.701 ns | 11.548 ns |    1.94x faster |   0.05x |      - |         - |          NA |
+|                    |               |            |             |           |           |                 |         |        |           |             |
+| **ActivitySource**     | **Double**        | **False**      | **2,485.53 ns** | **47.860 ns** | **51.209 ns** |        **baseline** |        **** | **1.5564** |    **3256 B** |            **** |
+| TraceActivityScope | Double        | False      |    14.83 ns |  0.261 ns |  0.244 ns | 167.606x faster |   4.30x |      - |         - |          NA |
+|                    |               |            |             |           |           |                 |         |        |           |             |
+| **ActivitySource**     | **Double**        | **True**       | **2,360.21 ns** | **40.339 ns** | **41.425 ns** |        **baseline** |        **** | **1.5564** |    **3256 B** |            **** |
+| TraceActivityScope | Double        | True       | 1,213.14 ns | 19.811 ns | 18.531 ns |    1.95x faster |   0.04x |      - |         - |          NA |
+|                    |               |            |             |           |           |                 |         |        |           |             |
+| **ActivitySource**     | **Int32**         | **False**      | **2,355.44 ns** | **45.743 ns** | **44.925 ns** |        **baseline** |        **** | **1.5564** |    **3256 B** |            **** |
+| TraceActivityScope | Int32         | False      |    14.97 ns |  0.340 ns |  0.334 ns | 157.411x faster |   4.45x |      - |         - |          NA |
+|                    |               |            |             |           |           |                 |         |        |           |             |
+| **ActivitySource**     | **Int32**         | **True**       | **2,507.98 ns** | **49.951 ns** | **55.521 ns** |        **baseline** |        **** | **1.5564** |    **3256 B** |            **** |
+| TraceActivityScope | Int32         | True       | 1,217.93 ns | 22.905 ns | 21.426 ns |    2.06x faster |   0.06x |      - |         - |          NA |
+|                    |               |            |             |           |           |                 |         |        |           |             |
+| **ActivitySource**     | **String**        | **False**      | **2,314.45 ns** | **46.350 ns** | **66.474 ns** |        **baseline** |        **** | **1.2093** |    **2536 B** |            **** |
+| TraceActivityScope | String        | False      |    14.83 ns |  0.324 ns |  0.303 ns | 156.123x faster |   5.37x |      - |         - |          NA |
+|                    |               |            |             |           |           |                 |         |        |           |             |
+| **ActivitySource**     | **String**        | **True**       | **2,287.18 ns** | **41.196 ns** | **36.519 ns** |        **baseline** |        **** | **1.2093** |    **2536 B** |            **** |
+| TraceActivityScope | String        | True       | 1,253.09 ns | 20.884 ns | 19.535 ns |    1.83x faster |   0.04x |      - |         - |          NA |

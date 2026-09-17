@@ -14,8 +14,11 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
 {
     private readonly ThreadLocal<TraceActivity?> _parentActivityByThreadLocal = new();
 
+    private readonly ThreadLocal<TraceActivityPool> _poolActivityByThreadLocal = new();
+
     internal static readonly TraceActivitySource Empty = new(nameof(Empty));
 
+    internal TraceActivityFactory Factory { get; init; } = new(new TraceActivityLimits());
     internal ITraceTimeProvider TimeProvider { get; init; } = new TraceTimeProvider();
     internal ITraceIdentifierGenerator IdentifierGenerator { get; init; } = new Xoshiro256PlusPlus();
     internal KeyValuePair<string, string>[] Resources { get; init; } = [];
@@ -28,6 +31,15 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
     {
         get => _parentActivityByThreadLocal.Value;
         set => _parentActivityByThreadLocal.Value = value;
+    }
+
+    private TraceActivityPool Pool
+    {
+        get
+        {
+            _poolActivityByThreadLocal.Value ??= new TraceActivityPool(256, Factory);
+            return _poolActivityByThreadLocal.Value;
+        }
     }
 
     public string Name { get; } = name;
@@ -43,7 +55,7 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
             return null;
         }
 
-        var activity = TraceActivityPool.Shared.Rent();
+        var activity = Pool.Rent();
 
         if (Parent == null)
         {
@@ -59,9 +71,9 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
         }
 
         activity.SpanId.Generate(IdentifierGenerator);
+        activity.OperationName = operationName;
         activity.Source = this;
         activity.Kind = kind;
-        activity.OperationName = operationName;
         activity.StartTime = TimeProvider.GetDateTime();
         activity.Recorded = true;
         // TODO: Support mark if parent is remote.
@@ -93,7 +105,7 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
         finally
         {
             activity.Clear();
-            TraceActivityPool.Shared.Return(activity);
+            Pool.Return(activity);
         }
     }
 
