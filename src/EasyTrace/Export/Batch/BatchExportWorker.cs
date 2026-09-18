@@ -18,7 +18,7 @@ public sealed class BatchExportWorker<T> : IDisposable
     /// <summary>
     /// Gets the maximum batch size for exports.
     /// </summary>
-    private readonly ulong _maxExportBatchSize;
+    private readonly ulong _maxExportSize;
 
     /// <summary>
     /// Gets the circular buffer for storing telemetry objects.
@@ -33,7 +33,7 @@ public sealed class BatchExportWorker<T> : IDisposable
     {
         _exporter = exporter;
         _circularBuffer = new CircularBuffer<TraceActivity>(options.MaxQueueSize, factory);
-        _maxExportBatchSize = options.MaxExportBatchSize;
+        _maxExportSize = options.MaxExportSize;
         _scheduledDelayMilliseconds = options.ScheduledDelayMilliseconds;
 
         if (!IsActive || IsCurrentThread)
@@ -65,7 +65,7 @@ public sealed class BatchExportWorker<T> : IDisposable
             return false;
         }
 
-        if (_circularBuffer.Count < _maxExportBatchSize)
+        if (_circularBuffer.Count < _maxExportSize)
         {
             return false;
         }
@@ -120,7 +120,7 @@ public sealed class BatchExportWorker<T> : IDisposable
 
         while (true)
         {
-            if (_circularBuffer.Count < _maxExportBatchSize)
+            if (_circularBuffer.Count < _maxExportSize)
             {
                 try
                 {
@@ -144,7 +144,7 @@ public sealed class BatchExportWorker<T> : IDisposable
         }
 
         var batchSize = 0ul;
-        while (batchSize < _maxExportBatchSize)
+        while (batchSize < _maxExportSize)
         {
             if (!_circularBuffer.Pop(out var bufferSlot))
             {

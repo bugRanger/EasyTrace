@@ -21,6 +21,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="bin\Release\net9.0\results\EasyTrace.Benchmarks.MemoryBenchmark-report-github.md" />
+    <Content Include="bin\Release\net9.0\results\EasyTrace.Benchmarks.OtlpExportBenchmark-report-github.md" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EasyTrace\EasyTrace.csproj" />
