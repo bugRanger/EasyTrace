@@ -48,7 +48,7 @@ public class OtlpExportTests
                 })
                 .SetBatchExportOptions(new BatchExportOptions
                 {
-                    MaxExportBatchSize = 3,
+                    MaxExportSize = 3,
                     ScheduledDelayMilliseconds = uint.MaxValue,
                 })
                 .AddOtlpExporter(new HttpExportParameters

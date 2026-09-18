@@ -33,7 +33,7 @@ public class ActivityExportTests
                 ActivitySpanId.CreateFromString("b7ad6b7169203331")))
             .SetBatchExportOptions(new BatchExportOptions
             {
-                MaxExportBatchSize = 1,
+                MaxExportSize = 1,
                 ScheduledDelayMilliseconds = uint.MaxValue,
             })
             .AddExporter(inMemoryExporter)
@@ -64,7 +64,7 @@ public class ActivityExportTests
             ))
             .SetBatchExportOptions(new BatchExportOptions
             {
-                MaxExportBatchSize = 3,
+                MaxExportSize = 3,
                 ScheduledDelayMilliseconds = uint.MaxValue,
             })
             .AddExporter(inMemoryExporter)
@@ -92,7 +92,7 @@ public class ActivityExportTests
             .SetIdentifierGenerator(MoqIdentGenerator.Sequence(2))
             .SetBatchExportOptions(new BatchExportOptions
             {
-                MaxExportBatchSize = 2,
+                MaxExportSize = 2,
                 ScheduledDelayMilliseconds = uint.MaxValue,
             })
             .AddExporter(inMemoryExporter)
@@ -120,7 +120,7 @@ public class ActivityExportTests
             .SetIdentifierGenerator(MoqIdentGenerator.Sequence(20))
             .SetBatchExportOptions(new BatchExportOptions
             {
-                MaxExportBatchSize = 2,
+                MaxExportSize = 2,
                 ScheduledDelayMilliseconds = uint.MaxValue,
             })
             .AddExporter(inMemoryExporter)
@@ -149,7 +149,7 @@ public class ActivityExportTests
             .SetIdentifierGenerator(MoqIdentGenerator.Sequence(2))
             .SetBatchExportOptions(new BatchExportOptions
             {
-                MaxExportBatchSize = uint.MaxValue,
+                MaxExportSize = uint.MaxValue,
                 ScheduledDelayMilliseconds = uint.MaxValue,
             })
             .AddExporter(inMemoryExporter)
@@ -179,7 +179,7 @@ public class ActivityExportTests
             .SetIdentifierGenerator(MoqIdentGenerator.Sequence(2))
             .SetBatchExportOptions(new BatchExportOptions
             {
-                MaxExportBatchSize = uint.MaxValue,
+                MaxExportSize = uint.MaxValue,
                 ScheduledDelayMilliseconds = (uint)scheduledDelayMilliseconds.Milliseconds,
             })
             .AddExporter(inMemoryExporter)
@@ -215,7 +215,7 @@ public class ActivityExportTests
                 ActivitySpanId.CreateFromString("b7ad6b7169203331")))
             .SetBatchExportOptions(new BatchExportOptions
             {
-                MaxExportBatchSize = 1,
+                MaxExportSize = 1,
                 ScheduledDelayMilliseconds = uint.MaxValue,
             })
             .AddExporter(inMemoryExporter)
@@ -258,7 +258,7 @@ public class ActivityExportTests
             ))
             .SetBatchExportOptions(new BatchExportOptions
             {
-                MaxExportBatchSize = 3,
+                MaxExportSize = 3,
                 ScheduledDelayMilliseconds = uint.MaxValue,
             })
             .AddExporter(inMemoryExporter)
