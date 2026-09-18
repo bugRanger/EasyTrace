@@ -12,16 +12,15 @@ The goal of the repository is to offer an
 alternative [System.Diagnostics.Activity](https://learn.microsoft.com/ru-ru/dotnet/api/system.diagnostics.activity?view=net-9.0)
 that is less expensive in terms of RAM and garbage collection load.
 
-### Benchmarks
+## 🔥 Benchmarks
 
+### Generation activity
 ```
-
 BenchmarkDotNet v0.15.8, Windows 10 (10.0.19045.6456/22H2/2022Update)
 AMD Ryzen 3 2200G with Radeon Vega Graphics 3.50GHz, 1 CPU, 4 logical and 4 physical cores
 .NET SDK 10.0.302
   [Host]     : .NET 9.0.14 (9.0.14, 9.0.1426.11910), X64 RyuJIT x86-64-v3
   DefaultJob : .NET 9.0.14 (9.0.14, 9.0.1426.11910), X64 RyuJIT x86-64-v3
-
 ```
 | Method             | AttributeType | IsExporter | Mean        | Error     | StdDev    | Ratio           | RatioSD | Gen0   | Allocated | Alloc Ratio |
 |------------------- |-------------- |----------- |------------:|----------:|----------:|----------------:|--------:|-------:|----------:|------------:|
@@ -48,6 +47,19 @@ AMD Ryzen 3 2200G with Radeon Vega Graphics 3.50GHz, 1 CPU, 4 logical and 4 phys
 |                    |               |            |             |           |           |                 |         |        |           |             |
 | ActivitySource     | String        | True       | 2,287.18 ns | 41.196 ns | 36.519 ns |        baseline |         | 1.2093 |    2536 B |             |
 | TraceActivityScope | String        | True       | 1,253.09 ns | 20.884 ns | 19.535 ns |    1.83x faster |   0.04x |      - |         - |          NA |
+
+### Generation and export activity
+```
+BenchmarkDotNet v0.15.8, Windows 10 (10.0.19045.6456/22H2/2022Update)
+AMD Ryzen 3 2200G with Radeon Vega Graphics 3.50GHz, 1 CPU, 4 logical and 4 physical cores
+.NET SDK 10.0.302
+  [Host]     : .NET 9.0.14 (9.0.14, 9.0.1426.11910), X64 RyuJIT x86-64-v3
+  DefaultJob : .NET 9.0.14 (9.0.14, 9.0.1426.11910), X64 RyuJIT x86-64-v3
+```
+| Method         | Mean     | Error    | StdDev   | Ratio        | RatioSD | Allocated | Alloc Ratio |
+|--------------- |---------:|---------:|---------:|-------------:|--------:|----------:|------------:|
+| ActivitySource | 62.10 ms | 0.330 ms | 0.309 ms |     baseline |         |  119569 B |             |
+| TraceActivity  | 62.48 ms | 0.298 ms | 0.279 ms | 1.01x slower |   0.01x |         - |          NA |
 
 ## 💡 Usage
 

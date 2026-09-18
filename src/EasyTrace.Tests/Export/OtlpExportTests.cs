@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -49,7 +48,6 @@ public class OtlpExportTests
                 .SetBatchExportOptions(new BatchExportOptions
                 {
                     MaxExportSize = 3,
-                    ScheduledDelayMilliseconds = uint.MaxValue,
                 })
                 .AddOtlpExporter(new HttpExportParameters
                 {

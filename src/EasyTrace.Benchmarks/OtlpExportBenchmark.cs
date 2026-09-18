@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Diagnostics;
 using System.Threading;
 using BenchmarkDotNet.Attributes;
 using EasyTrace.Benchmarks.TestData;
@@ -36,8 +34,6 @@ public class OtlpExportBenchmark
     private const int ExportBatchSize = 3;
     private const int ExportDelayInMs = 50;
 
-    [Params(100)] public int Iterations { get; set; }
-
     [GlobalSetup]
     public void Setup()
     {
@@ -48,13 +44,10 @@ public class OtlpExportBenchmark
     [Benchmark(Baseline = true)]
     public ulong ActivitySource()
     {
-        foreach (var _ in Enumerable.Repeat(0, Iterations))
-        {
-            using var activity1 = _activitySource!.StartActivity();
-            using var activity2 = _activitySource!.StartActivity();
-            using var activity3 = _activitySource!.StartActivity();
-            Thread.Sleep(ExportDelayInMs);
-        }
+        using var activity1 = _activitySource!.StartActivity();
+        using var activity2 = _activitySource.StartActivity();
+        using var activity3 = _activitySource.StartActivity();
+        Thread.Sleep(ExportDelayInMs);
 
         return _activityProcessor!.TotalEvents;
     }
@@ -62,13 +55,10 @@ public class OtlpExportBenchmark
     [Benchmark]
     public ulong TraceActivity()
     {
-        foreach (var _ in Enumerable.Repeat(0, Iterations))
-        {
-            using var activity1 = _traceActivitySource!.Start();
-            using var activity2 = _traceActivitySource!.Start();
-            using var activity3 = _traceActivitySource!.Start();
-            Thread.Sleep(ExportDelayInMs);
-        }
+        using var activity1 = _traceActivitySource!.Start();
+        using var activity2 = _traceActivitySource.Start();
+        using var activity3 = _traceActivitySource.Start();
+        Thread.Sleep(ExportDelayInMs);
 
         return _traceActivityInterceptor!.TotalEvents;
     }
@@ -96,8 +86,8 @@ public class OtlpExportBenchmark
         _traceActivitySource = new TraceActivitySourceBuilder()
             .SetBatchExportOptions(new BatchExportOptions
             {
+                MaxExportSize = ExportBatchSize,
                 MaxQueueSize = ExportBatchSize * 2,
-                MaxExportBatchSize = ExportBatchSize,
             })
             .AddInterceptor(_traceActivityInterceptor)
             .AddOtlpExporter(new HttpExportParameters())
