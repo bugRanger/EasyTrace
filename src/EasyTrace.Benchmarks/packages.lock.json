@@ -30,6 +30,12 @@
           "Microsoft.Diagnostics.Tracing.TraceEvent": "3.1.21"
         }
       },
+      "Lib.Harmony": {
+        "type": "Direct",
+        "requested": "[2.4.2, )",
+        "resolved": "2.4.2",
+        "contentHash": "D2X9ojVjqbqdqWVK3VQETrEb56yVoXxtEp6tP5UvW0PP+bA4uJiswqOxF8GhH02ECwyevUa9vwhwdLzyXfksbw=="
+      },
       "OpenTelemetry": {
         "type": "Direct",
         "requested": "[1.18.0, )",

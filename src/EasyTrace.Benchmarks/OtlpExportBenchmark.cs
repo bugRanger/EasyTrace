@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
-using System.Threading;
 using BenchmarkDotNet.Attributes;
+using EasyTrace.Benchmarks.Metrics;
 using EasyTrace.Benchmarks.TestData;
 using EasyTrace.Export.Batch;
 using EasyTrace.Export.Otlp.Http;
@@ -23,7 +23,8 @@ namespace EasyTrace.Benchmarks;
 [JsonExporterAttribute.FullCompressed]
 public class OtlpExportBenchmark
 {
-    public static void Run() => BenchmarkRunner.Run<OtlpExportBenchmark>();
+    public static void Run() =>
+        BenchmarkRunner.Run<OtlpExportBenchmark>(SocketDiagnoser.AddColumns);
 
     private static ActivitySource? _activitySource;
     private static FakeProcessor? _activityProcessor;
@@ -31,36 +32,51 @@ public class OtlpExportBenchmark
     private static TraceActivitySource? _traceActivitySource;
     private static FakeInterceptor? _traceActivityInterceptor;
 
+    private static SocketDiagnoser? _socketDiagnoser;
+
     private const int ExportBatchSize = 3;
-    private const int ExportDelayInMs = 50;
 
     [GlobalSetup]
     public void Setup()
     {
+        SetupSocketDiagnoser();
         SetupActivitySource();
         SetupTraceActivity();
     }
 
-    [Benchmark(Baseline = true)]
+    [GlobalCleanup]
+    public void GlobalCleanup()
+    {
+        _socketDiagnoser!.Report();
+    }
+
+    [Benchmark(Baseline = true, Description = "System.Diagnostics.Activity")]
     public ulong ActivitySource()
     {
-        using var activity1 = _activitySource!.StartActivity();
-        using var activity2 = _activitySource.StartActivity();
-        using var activity3 = _activitySource.StartActivity();
-        Thread.Sleep(ExportDelayInMs);
+        {
+            using var activity1 = _activitySource!.StartActivity();
+            using var activity2 = _activitySource.StartActivity();
+            using var activity3 = _activitySource.StartActivity();
+        }
 
         return _activityProcessor!.TotalEvents;
     }
 
-    [Benchmark]
+    [Benchmark(Description = "EasyTrace.Activity")]
     public ulong TraceActivity()
     {
-        using var activity1 = _traceActivitySource!.Start();
-        using var activity2 = _traceActivitySource.Start();
-        using var activity3 = _traceActivitySource.Start();
-        Thread.Sleep(ExportDelayInMs);
+        {
+            using var activity1 = _traceActivitySource!.Start();
+            using var activity2 = _traceActivitySource.Start();
+            using var activity3 = _traceActivitySource.Start();
+        }
 
         return _traceActivityInterceptor!.TotalEvents;
+    }
+
+    private static void SetupSocketDiagnoser()
+    {
+        _socketDiagnoser = SocketPatch.Initialize();
     }
 
     private static void SetupActivitySource()

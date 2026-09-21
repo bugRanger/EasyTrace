@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
@@ -16,7 +17,10 @@ namespace EasyTrace.Benchmarks
 
     public static class BenchmarkRunner
     {
-        public static Summary Run<T>() => BenchmarkDotNet.Running.BenchmarkRunner.Run<T>(BenchmarkConfig.Shared);
+        public static Summary Run<T>(Func<IConfig, IConfig>? configure = null) =>
+            BenchmarkDotNet.Running.BenchmarkRunner.Run<T>(configure == null
+                ? BenchmarkConfig.Shared
+                : configure.Invoke(BenchmarkConfig.Shared));
     }
 
     public static class BenchmarkConfig
