@@ -8,7 +8,7 @@ AMD Ryzen 3 2200G with Radeon Vega Graphics 3.50GHz, 1 CPU, 4 logical and 4 phys
 
 
 ```
-| Method         | Mean     | Error    | StdDev   | Ratio        | RatioSD | Allocated | Alloc Ratio |
-|--------------- |---------:|---------:|---------:|-------------:|--------:|----------:|------------:|
-| ActivitySource | 62.10 ms | 0.330 ms | 0.309 ms |     baseline |         |  119569 B |             |
-| TraceActivity  | 62.48 ms | 0.298 ms | 0.279 ms | 1.01x slower |   0.01x |         - |          NA |
+| Method                      | Mean       | Error    | StdDev   | Ratio        | RatioSD | Gen0   | Socket.Send | Allocated | Alloc Ratio |
+|---------------------------- |-----------:|---------:|---------:|-------------:|--------:|-------:|------------:|----------:|------------:|
+| System.Diagnostics.Activity | 1,304.7 ns | 25.63 ns | 44.88 ns |     baseline |         | 0.5798 |       29306 |    1234 B |             |
+| EasyTrace.Activity          |   559.3 ns | 11.20 ns | 20.76 ns | 2.34x faster |   0.12x |      - |       40390 |         - |          NA |

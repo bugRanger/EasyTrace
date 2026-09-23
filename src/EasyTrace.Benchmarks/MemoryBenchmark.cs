@@ -45,7 +45,7 @@ public class MemoryBenchmark
         _traceAttributeProvider = new TestAttributeProvider(AttributeCount);
     }
 
-    [Benchmark(Baseline = true)]
+    [Benchmark(Baseline = true, Description = "System.Diagnostics.Activity")]
     public ulong ActivitySource()
     {
         using var activity1 = _activitySource!.StartActivity();
@@ -59,7 +59,7 @@ public class MemoryBenchmark
         return _activityProcessor!.TotalEvents;
     }
 
-    [Benchmark]
+    [Benchmark(Description = "EasyTrace.Activity")]
     public ulong TraceActivityScope()
     {
         using var activity1 = _traceActivitySource!.Start();
