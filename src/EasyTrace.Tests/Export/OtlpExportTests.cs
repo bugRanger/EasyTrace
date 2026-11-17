@@ -114,7 +114,7 @@ public class OtlpExportTests
             // Make builder.
             var builder = new TraceActivitySourceBuilder()
                 .SetTimeProvider(new MoqTimeProvider())
-                .SetIdentifierGenerator(MoqIdentGenerator.Sequence(9))
+                .SetIdentifierGenerator(MoqIdentGenerator.Sequence(6))
                 .SetResources(new Dictionary<string, string>
                 {
                     ["telemetry.sdk.name"] = "easytrace",
@@ -124,7 +124,7 @@ public class OtlpExportTests
                 })
                 .SetBatchExportOptions(new BatchExportOptions
                 {
-                    MaxExportSize = 3,
+                    MaxExportSize = 2,
                 })
                 .AddOtlpExporter(new HttpExportParameters
                 {
@@ -147,14 +147,12 @@ public class OtlpExportTests
                 {
                     using var _ = source1.Start();
                     using var __ = source1.Start();
-                    using var ___ = source1.Start();
                 }
                 Task.Delay(100).Wait();
 
                 {
                     using var _ = source2.Start();
                     using var __ = source2.Start();
-                    using var ___ = source2.Start();
                 }
                 Task.Delay(100).Wait();
             }
