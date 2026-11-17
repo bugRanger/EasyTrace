@@ -20,7 +20,7 @@ public class OtlpExportTests
     }
 
     [Test]
-    public Task HttpExport()
+    public Task HttpExportWithOneSource()
     {
         var endPoint = new Uri("http://127.0.0.1:4318");
 
@@ -76,6 +76,85 @@ public class OtlpExportTests
                     using var _ = source.Start();
                     using var __ = source.Start();
                     using var ___ = source.Start();
+                }
+                Task.Delay(100).Wait();
+            }
+
+            // Wait sending.
+            Task.Delay(500).Wait();
+            // Check activity export in batch.
+            return Verify(TestRequestCache.GetInstanceCache(), Settings);
+        }
+        finally
+        {
+            // Stop HTTP-server.
+            Assert.True(server.Stop());
+            while (server.IsStarted)
+            {
+                Thread.Yield();
+            }
+        }
+    }
+
+    [Test]
+    public Task HttpExportWithTwoSource()
+    {
+        var endPoint = new Uri("http://127.0.0.1:4318");
+
+        // Start local HTTP-server.
+        var server = new TestHttpServer(IPAddress.Any, endPoint.Port);
+        Assert.True(server.Start());
+        while (!server.IsStarted)
+        {
+            Thread.Yield();
+        }
+
+        try
+        {
+            // Make builder.
+            var builder = new TraceActivitySourceBuilder()
+                .SetTimeProvider(new MoqTimeProvider())
+                .SetIdentifierGenerator(MoqIdentGenerator.Sequence(9))
+                .SetResources(new Dictionary<string, string>
+                {
+                    ["telemetry.sdk.name"] = "easytrace",
+                    ["telemetry.sdk.language"] = "dotnet",
+                    ["telemetry.sdk.version"] = "1.0.0",
+                    ["service.name"] = "unknown",
+                })
+                .SetBatchExportOptions(new BatchExportOptions
+                {
+                    MaxExportSize = 3,
+                })
+                .AddOtlpExporter(new HttpExportParameters
+                {
+                    EndPoint = endPoint,
+                    BufferSize = 1024 * 4,
+                });
+
+            // Make activity source.
+            var source1 = builder.Build("Source1");
+            var source2 = builder.Build("Source2");
+
+            // Make activity for batch export.
+            {
+                {
+                    using (var _ = source1.Start()) {}
+                    using (var _ = source2.Start()) {}
+                }
+                Task.Delay(100).Wait();
+                
+                {
+                    using var _ = source1.Start();
+                    using var __ = source1.Start();
+                    using var ___ = source1.Start();
+                }
+                Task.Delay(100).Wait();
+
+                {
+                    using var _ = source2.Start();
+                    using var __ = source2.Start();
+                    using var ___ = source2.Start();
                 }
                 Task.Delay(100).Wait();
             }
