@@ -298,6 +298,23 @@ public class ActivityExportTests
         return Verify(inMemoryExporter.Items, Settings);
     }
 
+    [Test]
+    public void GracefulShutdown()
+    {
+        // Arrange
+        var inMemoryExporter = new InMemoryExport();
+        var source = new TraceActivitySourceBuilder()
+            .AddExporter(inMemoryExporter)
+            .Build(nameof(ActivityExportTests));
+
+        // Act
+        for (var i = 0; i < 1_000_001; i++) using (source.Start()) {}
+        source.Dispose();
+
+        // Assert
+        Assert.That(inMemoryExporter.Items, Has.Count.EqualTo(1_000_001));
+    }
+    
     private const string AttributeSymbols =
         " !\"#$%&'()*+,-./0123456789:;<=>?@" +
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~" +
