@@ -145,14 +145,14 @@ public class OtlpExportTests
                 Task.Delay(100).Wait();
                 
                 {
-                    using var _ = source1.Start();
-                    using var __ = source1.Start();
+                    using (var _ = source1.Start()) {}
+                    using (var _ = source1.Start()) {}
                 }
                 Task.Delay(100).Wait();
 
                 {
-                    using var _ = source2.Start();
-                    using var __ = source2.Start();
+                    using (var _ = source2.Start()) {}
+                    using (var _ = source2.Start()) {}
                 }
                 Task.Delay(100).Wait();
             }
