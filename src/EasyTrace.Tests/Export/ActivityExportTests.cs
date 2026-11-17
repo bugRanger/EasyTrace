@@ -34,7 +34,7 @@ public class ActivityExportTests
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = 1,
-                ScheduledDelayMilliseconds = uint.MaxValue,
+                ScheduledDelay = TimeSpan.Zero,
             })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
@@ -65,7 +65,7 @@ public class ActivityExportTests
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = 3,
-                ScheduledDelayMilliseconds = uint.MaxValue,
+                ScheduledDelay = TimeSpan.Zero,
             })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
@@ -93,7 +93,7 @@ public class ActivityExportTests
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = 2,
-                ScheduledDelayMilliseconds = uint.MaxValue,
+                ScheduledDelay = TimeSpan.Zero,
             })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
@@ -121,7 +121,7 @@ public class ActivityExportTests
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = 2,
-                ScheduledDelayMilliseconds = uint.MaxValue,
+                ScheduledDelay = TimeSpan.Zero,
             })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
@@ -150,7 +150,7 @@ public class ActivityExportTests
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = uint.MaxValue,
-                ScheduledDelayMilliseconds = uint.MaxValue,
+                ScheduledDelay = TimeSpan.Zero,
             })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
@@ -180,7 +180,7 @@ public class ActivityExportTests
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = uint.MaxValue,
-                ScheduledDelayMilliseconds = (uint)scheduledDelayMilliseconds.Milliseconds,
+                ScheduledDelay = scheduledDelayMilliseconds,
             })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
@@ -216,7 +216,7 @@ public class ActivityExportTests
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = 1,
-                ScheduledDelayMilliseconds = uint.MaxValue,
+                ScheduledDelay = TimeSpan.Zero,
             })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
@@ -259,7 +259,7 @@ public class ActivityExportTests
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = 3,
-                ScheduledDelayMilliseconds = uint.MaxValue,
+                ScheduledDelay = TimeSpan.Zero,
             })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
@@ -299,22 +299,64 @@ public class ActivityExportTests
     }
 
     [Test]
-    public void GracefulShutdown()
+    public Task GracefulShutdown()
     {
         // Arrange
+        const int countActivities = 1_001;
+
         var inMemoryExporter = new InMemoryExport();
         var source = new TraceActivitySourceBuilder()
+            .SetIdentifierGenerator(MoqIdentGenerator.Sequence(countActivities))
+            .SetTimeProvider(new MoqTimeProvider())
+            .SetBatchExportOptions(new BatchExportOptions
+            {
+                MaxExportSize = 500,
+                ScheduledDelay = TimeSpan.FromSeconds(5),
+                ShutdownDelay = TimeSpan.FromSeconds(5),
+            })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
 
         // Act
-        for (var i = 0; i < 1_000_001; i++) using (source.Start()) {}
+        // @formatter:off
+        for (var i = 0; i < countActivities; i++) using (source.Start()) {}
         source.Dispose();
+        // @formatter:on
 
         // Assert
-        Assert.That(inMemoryExporter.Items, Has.Count.EqualTo(1_000_001));
+        return Verify(inMemoryExporter.Batches, Settings);
     }
-    
+
+    [Test]
+    public Task GracefulShutdownByTimeout()
+    {
+        // Arrange
+        const int countActivities = 1_001;
+
+        var flushDelay = TimeSpan.FromSeconds(1);
+        var inMemoryExporter = new InMemoryExport(flushDelay);
+        var source = new TraceActivitySourceBuilder()
+            .SetIdentifierGenerator(MoqIdentGenerator.Sequence(countActivities))
+            .SetTimeProvider(new MoqTimeProvider())
+            .SetBatchExportOptions(new BatchExportOptions
+            {
+                MaxExportSize = 500,
+                ScheduledDelay = TimeSpan.FromSeconds(5),
+                ShutdownDelay = flushDelay.Divide(2),
+            })
+            .AddExporter(inMemoryExporter)
+            .Build(nameof(ActivityExportTests));
+
+        // Act
+        // @formatter:off
+        for (var i = 0; i < countActivities; i++) using (source.Start()) {}
+        source.Dispose();
+        // @formatter:on
+
+        // Assert
+        return Verify(inMemoryExporter.Batches, Settings);
+    }
+
     private const string AttributeSymbols =
         " !\"#$%&'()*+,-./0123456789:;<=>?@" +
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~" +

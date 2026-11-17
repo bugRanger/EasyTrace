@@ -76,7 +76,13 @@ var source = new TraceActivitySourceBuilder()
     // add intercept in your impl.
     .AddInterceptor(new MyInterceptor())
     // set batch processing for all exporters. 
-    .SetBatchExportOptions(new BatchExportOptions())
+    .SetBatchExportOptions(new BatchExportOptions 
+    {
+        MaxExportSize = 500,
+        MaxQueueSize = 2048,
+        ScheduledDelay = TimeSpan.FromSeconds(1),
+        ShutdownDelay = TimeSpan.FromSeconds(5),
+    })
     // add export in OTLP (HTTP/1.1 + Protobuf)
     .AddOtlpExporter(new HttpExportParameters())
     // add export in your impl.
