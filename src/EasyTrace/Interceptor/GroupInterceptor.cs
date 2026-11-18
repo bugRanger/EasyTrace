@@ -2,9 +2,9 @@
 
 namespace EasyTrace.Interceptor;
 
-public class GroupInterceptor(List<ITraceActivityInterceptor> processors) : ITraceActivityInterceptor
+public class GroupInterceptor(ITraceActivityInterceptor[] processors)  : ITraceActivityInterceptor
 {
-    public void Start(scoped in TraceActivityRef activityRef)
+    void ITraceActivityInterceptor.Start(scoped in TraceActivityRef activityRef)
     {
         foreach (var processor in processors)
         {
@@ -12,7 +12,7 @@ public class GroupInterceptor(List<ITraceActivityInterceptor> processors) : ITra
         }
     }
 
-    public void Stop(scoped in TraceActivityRef activityRef)
+    void ITraceActivityInterceptor.Stop(scoped in TraceActivityRef activityRef)
     {
         foreach (var processor in processors)
         {

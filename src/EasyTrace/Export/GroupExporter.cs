@@ -4,7 +4,9 @@ namespace EasyTrace.Export;
 
 public sealed class GroupExporter(ITraceActivityExporter[] exporters) : ITraceActivityExporter
 {
-    public void Export(scoped in TraceActivityRef activityRef)
+    public int Count => exporters.Length;
+
+    void ITraceActivityExporter.Export(scoped in TraceActivityRef activityRef)
     {
         foreach (var exporter in exporters)
         {
@@ -12,7 +14,7 @@ public sealed class GroupExporter(ITraceActivityExporter[] exporters) : ITraceAc
         }
     }
 
-    public void Flush()
+    void ITraceActivityExporter.Flush()
     {
         foreach (var exporter in exporters)
         {

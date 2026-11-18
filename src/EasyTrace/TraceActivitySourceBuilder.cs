@@ -1,7 +1,7 @@
+using System.Runtime.CompilerServices;
 using EasyTrace.Activity;
 using EasyTrace.Export;
 using EasyTrace.Export.Batch;
-using EasyTrace.Export.Otlp.Grpc;
 using EasyTrace.Export.Otlp.Http;
 using EasyTrace.Identifier;
 using EasyTrace.Identifier.Generator;
@@ -12,100 +12,127 @@ namespace EasyTrace;
 
 public class TraceActivitySourceBuilder
 {
-    private readonly List<ITraceActivityExporter> _exporters = [];
     private readonly List<ITraceActivityInterceptor> _interceptors = [];
-    private Dictionary<string, string> _resources = GetResourceDefault();
-    private TraceActivityLimits _limits = new();
+    private readonly List<ITraceActivityExporter> _exporters = [];
     private BatchExportOptions? _batchExportOptions;
-    private ITraceTimeProvider _timeProvider = new TraceTimeProvider();
-    private ITraceIdentifierGenerator _identifierGenerator = new Xoshiro256PlusPlus();
+    private BatchExporter? _batchExporter;
+    private Dictionary<string, string>? _resources;
+    private TraceActivityParent? _parent;
+    private TraceActivityFactory? _factory;
+    private ITraceTimeProvider? _timeProvider;
+    private ITraceIdentifierGenerator? _identifierGenerator;
 
     public TraceActivitySourceBuilder SetLimits(TraceActivityLimits limits)
     {
-        _limits = limits;
+        ThrowIfNotNull(_factory);
+        _factory = new TraceActivityFactory(limits);
         return this;
     }
 
     public TraceActivitySourceBuilder SetTimeProvider(ITraceTimeProvider timeProvider)
     {
+        ThrowIfNotNull(_timeProvider);
         _timeProvider = timeProvider;
         return this;
     }
 
     public TraceActivitySourceBuilder SetIdentifierGenerator(ITraceIdentifierGenerator identifierGenerator)
     {
+        ThrowIfNotNull(_identifierGenerator);
         _identifierGenerator = identifierGenerator;
         return this;
     }
 
     public TraceActivitySourceBuilder SetBatchExportOptions(BatchExportOptions batchExportOptions)
     {
+        ThrowIfNotNull(_batchExportOptions);
         _batchExportOptions = batchExportOptions;
         return this;
     }
 
     public TraceActivitySourceBuilder AddOtlpExporter(HttpExportParameters parameters)
     {
+        ThrowIfNotNull(_batchExporter, "No changes are permitted after the first build");
         parameters.Validate();
-        AddExporter(new HttpExporter(parameters));
+        var exporter = new HttpExporter(parameters);
+        exporter.WarmUp();
+        AddExporter(exporter);
         return this;
     }
 
     public TraceActivitySourceBuilder AddExporter(ITraceActivityExporter exporter)
     {
+        ThrowIfNotNull(_batchExporter, "No changes are permitted after the first build");
         _exporters.Add(exporter);
         return this;
     }
 
     public TraceActivitySourceBuilder AddInterceptor(ITraceActivityInterceptor interceptor)
     {
+        ThrowIfNotNull(_batchExporter, "No changes are permitted after the first build");
         _interceptors.Add(interceptor);
-        return this;
-    }
-
-    public TraceActivitySourceBuilder AddResources(IEnumerable<KeyValuePair<string, string>> resources)
-    {
-        foreach (var (key, value) in resources)
-        {
-            _resources.Add(key, value);
-        }
-
         return this;
     }
 
     public TraceActivitySourceBuilder SetResources(IEnumerable<KeyValuePair<string, string>> resources)
     {
+        ThrowIfNotNull(_resources);
         _resources = new Dictionary<string, string>(resources);
+        return this;
+    }
+
+    public TraceActivitySourceBuilder AddResources(IEnumerable<KeyValuePair<string, string>> resources)
+    {
+        ThrowIfNull(_resources);
+
+        foreach (var (key, value) in resources)
+        {
+            _resources!.Add(key, value);
+        }
+
         return this;
     }
 
     public TraceActivitySource Build(string name, Version? version = null)
     {
-        TraceActivityFactory factory = new(_limits);
-        BatchExporter<ITraceActivityExporter>? batchExporter = null;
-        if (_exporters.Count > 0)
-        {
-            batchExporter = new BatchExporter<ITraceActivityExporter>(
-                _exporters.Count == 1 ? _exporters[0] : new GroupExporter([.. _exporters]),
-                factory,
-                _batchExportOptions ?? new BatchExportOptions());
-        }
+        _resources ??= GetResourceDefault();
+        _timeProvider ??= new TraceTimeProvider();
+        _identifierGenerator ??= new Xoshiro256PlusPlus();
 
-        GroupInterceptor? groupInterceptor = null;
-        if (_interceptors.Count > 0)
-        {
-            groupInterceptor = new GroupInterceptor(_interceptors);
-        }
+        _parent ??= new TraceActivityParent();
+        _factory ??= new TraceActivityFactory(new TraceActivityLimits());
+
+        _batchExportOptions ??= new BatchExportOptions();
+        _batchExporter ??= new BatchExporter(new GroupExporter([.. _exporters]), _factory, _batchExportOptions);
 
         return new TraceActivitySource(name, version)
         {
-            Factory = factory,
+            Parent = _parent,
+            Factory = _factory,
             TimeProvider = _timeProvider,
             IdentifierGenerator = _identifierGenerator,
             Resources = [.. _resources],
-            BatchExporter = batchExporter,
-            GroupInterceptor = groupInterceptor,
+            BatchExporter = _batchExporter,
+            GroupInterceptor = new GroupInterceptor([.. _interceptors]),
         };
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowIfNull<T>(T value, string? message = null)
+    {
+        if (value is null)
+        {
+            throw new InvalidOperationException(message ?? "Value must be not null.");
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowIfNotNull<T>(T value, string? message = null)
+    {
+        if (value is not null)
+        {
+            throw new InvalidOperationException(message ?? "Value has already been set.");
+        }
     }
 
     private static Dictionary<string, string> GetResourceDefault()
