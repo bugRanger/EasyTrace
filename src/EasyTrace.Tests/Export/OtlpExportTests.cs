@@ -25,7 +25,8 @@ public class OtlpExportTests
         var endPoint = new Uri("http://127.0.0.1:4318");
 
         // Start local HTTP-server.
-        var server = new TestHttpServer(IPAddress.Any, endPoint.Port);
+        var cache = new TestRequestCache();
+        var server = new TestHttpServer(IPAddress.Any, endPoint.Port, cache);
         Assert.True(server.Start());
         while (!server.IsStarted)
         {
@@ -83,7 +84,7 @@ public class OtlpExportTests
             // Wait sending.
             Task.Delay(500).Wait();
             // Check activity export in batch.
-            return Verify(TestRequestCache.GetInstanceCache(), Settings);
+            return Verify(cache.GetValues(), Settings);
         }
         finally
         {
@@ -102,7 +103,8 @@ public class OtlpExportTests
         var endPoint = new Uri("http://127.0.0.1:4318");
 
         // Start local HTTP-server.
-        var server = new TestHttpServer(IPAddress.Any, endPoint.Port);
+        var cache = new TestRequestCache();
+        var server = new TestHttpServer(IPAddress.Any, endPoint.Port, cache);
         Assert.True(server.Start());
         while (!server.IsStarted)
         {
@@ -160,7 +162,7 @@ public class OtlpExportTests
             // Wait sending.
             Task.Delay(500).Wait();
             // Check activity export in batch.
-            return Verify(TestRequestCache.GetInstanceCache(), Settings);
+            return Verify(cache.GetValues(), Settings);
         }
         finally
         {
@@ -174,7 +176,7 @@ public class OtlpExportTests
     }
 }
 
-class TestHttpSession(HttpServer server) : HttpSession(server)
+class TestHttpSession(HttpServer server, TestRequestCache cache) : HttpSession(server)
 {
     protected override void OnReceivedRequest(HttpRequest request)
     {
@@ -186,7 +188,7 @@ class TestHttpSession(HttpServer server) : HttpSession(server)
             // Decode the key value
             key = Uri.UnescapeDataString(key);
 
-            TestRequestCache.GetInstance().Set(key, value);
+            cache.Set(key, value);
             SendResponseAsync(Response.MakeOkResponse());
         }
         else
@@ -206,22 +208,16 @@ class TestHttpSession(HttpServer server) : HttpSession(server)
     }
 }
 
-class TestHttpServer(IPAddress address, int port) : HttpServer(address, port)
+class TestHttpServer(IPAddress address, int port, TestRequestCache cache) : HttpServer(address, port)
 {
-    protected override TcpSession CreateSession() => new TestHttpSession(this);
+    protected override TcpSession CreateSession() => new TestHttpSession(this, cache);
 
     protected override void OnError(SocketError error) => Console.WriteLine($"HTTP session caught an error: {error}");
 }
 
 public class TestRequestCache
 {
-    public static TestRequestCache GetInstance()
-    {
-        _instance ??= new TestRequestCache();
-        return _instance;
-    }
-
-    public static string GetInstanceCache() => GetInstance().GetAllCache();
+    private readonly ConcurrentDictionary<string, List<string>> _cache = new();
 
     public void Set(string key, byte[] value)
     {
@@ -234,7 +230,7 @@ public class TestRequestCache
         _cache[key] = [Convert.ToHexStringLower(value)];
     }
 
-    public string GetAllCache()
+    public string GetValues()
     {
         var result = new StringBuilder();
         result.Append("[\n");
@@ -249,7 +245,4 @@ public class TestRequestCache
         result.Append("]\n");
         return result.ToString();
     }
-
-    private readonly ConcurrentDictionary<string, List<string>> _cache = new();
-    private static TestRequestCache? _instance;
 }
