@@ -32,6 +32,9 @@ public class ProtobufSerializer
     public void Write(scoped in TraceActivityRef activityRef) => WriteActivity(Stream, activityRef);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool IsEmpty() => _messageWritePosition == Stream.Position;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual ReadOnlySpan<byte> Flush()
     {
         Stream.WriteLength(_traceLengthPosition);

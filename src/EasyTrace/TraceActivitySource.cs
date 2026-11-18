@@ -22,8 +22,8 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
     internal ITraceTimeProvider TimeProvider { get; init; } = new TraceTimeProvider();
     internal ITraceIdentifierGenerator IdentifierGenerator { get; init; } = new Xoshiro256PlusPlus();
     internal KeyValuePair<string, string>[] Resources { get; init; } = [];
-    internal BatchExporter<ITraceActivityExporter>? BatchExporter { get; set; }
-    internal GroupInterceptor? GroupInterceptor { get; set; }
+    internal BatchExporter? BatchExporter { get; set; }
+    internal ITraceActivityInterceptor? GroupInterceptor { get; set; }
 
     private bool _disposed;
 
@@ -50,7 +50,7 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
         [CallerMemberName] string operationName = "",
         ActivityKind kind = ActivityKind.Internal)
     {
-        if (BatchExporter == null)
+        if (BatchExporter is not { IsActive: true })
         {
             return null;
         }

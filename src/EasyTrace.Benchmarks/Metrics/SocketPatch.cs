@@ -50,9 +50,9 @@ public class SocketPatch
         if (errorCode == SocketError.Success)
         {
             byte[] sentBytes = buffer.ToArray();
-            string text = Encoding.UTF8.GetString(sentBytes);
+            string text = System.Text.Encoding.UTF8.GetString(sentBytes);
 
-            Console.WriteLine($"[Socket.Send] Sent {bytesSent} bytes.");
+            Console.WriteLine($"[Socket.Send] Sent {sentBytes} bytes.");
             Console.WriteLine($"-> Remote: {socket.RemoteEndPoint}");
             Console.WriteLine($"-> Payload: {text}");
         }

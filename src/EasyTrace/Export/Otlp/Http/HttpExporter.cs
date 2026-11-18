@@ -56,6 +56,11 @@ public class HttpExporter : FastHttpClient, ITraceActivityExporter
 
         foreach (var (_, serializer) in _serializerBySource)
         {
+            if (serializer.IsEmpty())
+            {
+                continue;
+            }
+
             var bytes = serializer.Flush();
             if (_requestBuffer.Size < _requestOffset + bytes.Length + 11 + newLine.Length * 2)
             {

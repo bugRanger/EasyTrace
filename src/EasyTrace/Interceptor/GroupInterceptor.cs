@@ -1,20 +1,28 @@
-﻿using EasyTrace.Activity;
+﻿using System.Collections.Concurrent;
+using EasyTrace.Activity;
 
 namespace EasyTrace.Interceptor;
 
-public class GroupInterceptor(List<ITraceActivityInterceptor> processors) : ITraceActivityInterceptor
+public class GroupInterceptor : ITraceActivityInterceptor
 {
-    public void Start(scoped in TraceActivityRef activityRef)
+    private readonly ConcurrentBag<ITraceActivityInterceptor> _processors = [];
+
+    public void Add(ITraceActivityInterceptor exporter)
     {
-        foreach (var processor in processors)
+        _processors.Add(exporter);
+    }
+
+    void ITraceActivityInterceptor.Start(scoped in TraceActivityRef activityRef)
+    {
+        foreach (var processor in _processors)
         {
             processor.Start(activityRef);
         }
     }
 
-    public void Stop(scoped in TraceActivityRef activityRef)
+    void ITraceActivityInterceptor.Stop(scoped in TraceActivityRef activityRef)
     {
-        foreach (var processor in processors)
+        foreach (var processor in _processors)
         {
             processor.Stop(activityRef);
         }

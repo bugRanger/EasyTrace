@@ -1,4 +1,5 @@
-﻿using EasyTrace.Activity;
+﻿using System.Diagnostics;
+using EasyTrace.Activity;
 using EasyTrace.Export.Batch.Buffer;
 
 namespace EasyTrace.Export.Batch;

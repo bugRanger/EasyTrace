@@ -72,7 +72,7 @@ public class OtlpExportTests
                     using (var __ = source.Start()) {}
                 }
                 Task.Delay(100).Wait();
-                
+
                 {
                     using var _ = source.Start();
                     using var __ = source.Start();
@@ -141,20 +141,20 @@ public class OtlpExportTests
             // Make activity for batch export.
             {
                 {
-                    using (var _ = source1.Start()) {}
-                    using (var _ = source2.Start()) {}
-                }
-                Task.Delay(100).Wait();
-                
-                {
-                    using (var _ = source1.Start()) {}
-                    using (var _ = source1.Start()) {}
+                    using var _ = source1.Start();
+                    using var __ = source2.Start();
                 }
                 Task.Delay(100).Wait();
 
                 {
-                    using (var _ = source2.Start()) {}
-                    using (var _ = source2.Start()) {}
+                    using var _ = source1.Start();
+                    using var __ = source1.Start();
+                }
+                Task.Delay(100).Wait();
+
+                {
+                    using var _ = source2.Start();
+                    using var __ = source2.Start();
                 }
                 Task.Delay(100).Wait();
             }
@@ -176,7 +176,7 @@ public class OtlpExportTests
     }
 }
 
-class TestHttpSession(HttpServer server, TestRequestCache cache) : HttpSession(server)
+public class TestHttpSession(HttpServer server, TestRequestCache cache) : HttpSession(server)
 {
     protected override void OnReceivedRequest(HttpRequest request)
     {
@@ -208,7 +208,7 @@ class TestHttpSession(HttpServer server, TestRequestCache cache) : HttpSession(s
     }
 }
 
-class TestHttpServer(IPAddress address, int port, TestRequestCache cache) : HttpServer(address, port)
+public class TestHttpServer(IPAddress address, int port, TestRequestCache cache) : HttpServer(address, port)
 {
     protected override TcpSession CreateSession() => new TestHttpSession(this, cache);
 
@@ -221,13 +221,14 @@ public class TestRequestCache
 
     public void Set(string key, byte[] value)
     {
+        var valueStr = Convert.ToHexStringLower(value);
         if (_cache.TryGetValue(key, out var list))
         {
-            list.Add(Convert.ToHexStringLower(value));
+            list.Add(valueStr);
             return;
         }
 
-        _cache[key] = [Convert.ToHexStringLower(value)];
+        _cache[key] = [valueStr];
     }
 
     public string GetValues()
