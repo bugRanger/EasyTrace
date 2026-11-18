@@ -54,7 +54,9 @@ public class TraceActivitySourceBuilder
     public TraceActivitySourceBuilder AddOtlpExporter(HttpExportParameters parameters)
     {
         parameters.Validate();
-        AddExporter(new HttpExporter(parameters));
+        var exporter = new HttpExporter(parameters);
+        exporter.WarmUp();
+        AddExporter(exporter);
         return this;
     }
 

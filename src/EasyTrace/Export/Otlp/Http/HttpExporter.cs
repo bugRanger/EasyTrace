@@ -33,6 +33,11 @@ public class HttpExporter : FastHttpClient, ITraceActivityExporter
         _requestOffset = request.Cache.Size;
     }
 
+    public bool WarmUp()
+    {
+        return IsConnected || ConnectAsync();
+    }
+
     void ITraceActivityExporter.Export(scoped in TraceActivityRef activityRef)
     {
         if (!_serializerBySource.TryGetValue(activityRef.Source, out var serializer))
@@ -81,13 +86,10 @@ public class HttpExporter : FastHttpClient, ITraceActivityExporter
             bytes.CopyTo(_requestBuffer.Data.AsSpan(offset));
             offset += bytes.Length;
 
-            if (!IsConnected)
+            if (!WarmUp())
             {
-                if (!Connect())
-                {
-                    // TODO: Write error in log.
-                    continue;
-                }
+                // TODO: Write error in log.
+                continue;
             }
 
             var byteCount = Send(_requestBuffer.Data.AsSpan(0, offset));
