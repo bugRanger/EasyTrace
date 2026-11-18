@@ -4,7 +4,9 @@ namespace EasyTrace.Interceptor;
 
 public class GroupInterceptor(ITraceActivityInterceptor[] processors)  : ITraceActivityInterceptor
 {
-    void ITraceActivityInterceptor.Start(scoped in TraceActivityRef activityRef)
+    public bool IsActive => processors.Length > 0;
+    
+    public void Start(scoped in TraceActivityRef activityRef)
     {
         foreach (var processor in processors)
         {
@@ -12,7 +14,7 @@ public class GroupInterceptor(ITraceActivityInterceptor[] processors)  : ITraceA
         }
     }
 
-    void ITraceActivityInterceptor.Stop(scoped in TraceActivityRef activityRef)
+    public void Stop(scoped in TraceActivityRef activityRef)
     {
         foreach (var processor in processors)
         {

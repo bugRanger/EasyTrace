@@ -32,7 +32,6 @@ public sealed class BatchExportWorker<T> : IDisposable
     /// </summary>
     private readonly CircularBuffer<TraceActivity> _circularBuffer;
 
-    private readonly bool _isCurrentThread;
     private bool _isActive;
 
     public BatchExportWorker(T exporter, TraceActivityFactory factory, BatchExportOptions options)
@@ -43,10 +42,8 @@ public sealed class BatchExportWorker<T> : IDisposable
         _scheduledDelay = options.ScheduledDelay;
         _shutdownDelay = options.ShutdownDelay;
 
-        _isActive = options.ScheduledDelay >= TimeSpan.Zero;
-        _isCurrentThread = options.ScheduledDelay == TimeSpan.Zero;
-
-        if (_isActive && !_isCurrentThread)
+        _isActive = options.ScheduledDelay > TimeSpan.Zero;
+        if (_isActive)
         {
             _schedulerThread = new Thread(SchedulerLoop)
             {
@@ -80,14 +77,7 @@ public sealed class BatchExportWorker<T> : IDisposable
 
         try
         {
-            if (_isCurrentThread)
-            {
-                PerformExport();
-            }
-            else
-            {
-                _exportNotifier.Set();
-            }
+            _exportNotifier.Set();
         }
         catch (ObjectDisposedException)
         {

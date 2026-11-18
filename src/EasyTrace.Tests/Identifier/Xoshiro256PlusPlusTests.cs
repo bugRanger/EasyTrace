@@ -1,4 +1,5 @@
-﻿using EasyTrace.Identifier.Generator;
+﻿using System.Collections.Concurrent;
+using EasyTrace.Identifier.Generator;
 
 namespace EasyTrace.Tests.Identifier;
 
@@ -34,6 +35,30 @@ public class Xoshiro256PlusPlusTests
         }
 
         Assert.That(collisions, Is.LessThanOrEqualTo(1), $"Слишком много коллизий между близкими сидами: {collisions}");
+    }
+
+    [Test]
+    public void DifferentThreads_ProduceEntirelyDifferentOutputs()
+    {
+        var rng = Xoshiro256PlusPlusShared.Instance;
+        var set = new ConcurrentDictionary<ulong, byte>();
+        
+        ulong collisions = 0;
+
+        Parallel.For(0, 4, _ =>
+        {
+            Span<byte> bytes = stackalloc byte[8];
+            for (var i = 0; i < 2_000_000; i++)
+            {
+                rng.Generate(bytes);
+                if (!set.TryAdd(BitConverter.ToUInt64(bytes), 0))
+                {
+                    Interlocked.Increment(ref collisions);
+                }
+            }
+        });
+        
+        Assert.That(collisions, Is.LessThanOrEqualTo(1), $"Слишком много коллизий между разными потоками: {collisions}");
     }
 
     /// <summary>

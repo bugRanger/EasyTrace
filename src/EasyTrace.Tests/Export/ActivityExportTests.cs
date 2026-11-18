@@ -34,7 +34,7 @@ public class ActivityExportTests
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = 1,
-                ScheduledDelay = TimeSpan.Zero,
+                ScheduledDelay = TimeSpan.FromMicroseconds(100),
             })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
@@ -45,6 +45,7 @@ public class ActivityExportTests
         }
 
         // Assert
+        // - wait for batch processing from another thread to complete.
         Task.Delay(500).Wait();
         return Verify(inMemoryExporter.Items, Settings);
     }
@@ -65,7 +66,7 @@ public class ActivityExportTests
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = 3,
-                ScheduledDelay = TimeSpan.Zero,
+                ScheduledDelay = TimeSpan.FromMicroseconds(100),
             })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
@@ -78,6 +79,7 @@ public class ActivityExportTests
         }
 
         // Assert
+        // - wait for batch processing from another thread to complete.
         Task.Delay(500).Wait();
         return Verify(inMemoryExporter.Items, Settings);
     }
@@ -93,7 +95,7 @@ public class ActivityExportTests
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = 2,
-                ScheduledDelay = TimeSpan.Zero,
+                ScheduledDelay = TimeSpan.FromMicroseconds(100),
             })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
@@ -121,7 +123,7 @@ public class ActivityExportTests
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = 2,
-                ScheduledDelay = TimeSpan.Zero,
+                ScheduledDelay = TimeSpan.FromMicroseconds(100),
             })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
@@ -216,7 +218,7 @@ public class ActivityExportTests
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = 1,
-                ScheduledDelay = TimeSpan.Zero,
+                ScheduledDelay = TimeSpan.FromMicroseconds(100),
             })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
@@ -233,6 +235,7 @@ public class ActivityExportTests
         }
 
         // Assert
+        // - wait for batch processing from another thread to complete.
         Task.Delay(500).Wait();
         return Verify(inMemoryExporter.Items, Settings);
     }
@@ -259,7 +262,7 @@ public class ActivityExportTests
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = 3,
-                ScheduledDelay = TimeSpan.Zero,
+                ScheduledDelay = TimeSpan.FromMicroseconds(100),
             })
             .AddExporter(inMemoryExporter)
             .Build(nameof(ActivityExportTests));
@@ -294,6 +297,7 @@ public class ActivityExportTests
         }
 
         // Assert
+        // - wait for batch processing from another thread to complete.
         Task.Delay(500).Wait();
         return Verify(inMemoryExporter.Items, Settings);
     }

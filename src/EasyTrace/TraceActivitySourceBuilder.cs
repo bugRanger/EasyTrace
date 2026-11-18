@@ -97,7 +97,7 @@ public class TraceActivitySourceBuilder
     {
         _resources ??= GetResourceDefault();
         _timeProvider ??= new TraceTimeProvider();
-        _identifierGenerator ??= new Xoshiro256PlusPlus();
+        _identifierGenerator ??= Xoshiro256PlusPlusShared.Instance;
 
         _parent ??= new TraceActivityParent();
         _factory ??= new TraceActivityFactory(new TraceActivityLimits());

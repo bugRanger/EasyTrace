@@ -21,8 +21,7 @@ public sealed record BatchExportOptions
     /// The delay interval between two consecutive exports. The default value is 5s.
     /// </summary>
     /// <remarks>
-    /// If a value less than <see cref="TimeSpan.Zero"/> is specified, the scheduled export is disabled.
-    /// If the value is set to <see cref="TimeSpan.Zero"/>, the export is performed in the calling thread.
+    /// If the value is set to <see cref="TimeSpan.Zero"/> or less, the scheduled export is disabled.
     /// </remarks>
     public TimeSpan ScheduledDelay { get; set; } = DefaultScheduledDelay;
 
