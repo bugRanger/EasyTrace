@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using EasyTrace.Activity;
-using EasyTrace.Export;
 using EasyTrace.Export.Batch;
 using EasyTrace.Identifier;
 using EasyTrace.Identifier.Generator;
@@ -22,7 +21,7 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
     internal ITraceIdentifierGenerator IdentifierGenerator { get; init; } = new Xoshiro256PlusPlus();
     internal KeyValuePair<string, string>[] Resources { get; init; } = [];
     internal BatchExporter? BatchExporter { get; set; }
-    internal ITraceActivityInterceptor? GroupInterceptor { get; set; }
+    internal GroupInterceptor? GroupInterceptor { get; set; }
 
     private bool _disposed;
 
@@ -43,7 +42,7 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
         [CallerMemberName] string operationName = "",
         ActivityKind kind = ActivityKind.Internal)
     {
-        if (BatchExporter is not { IsActive: true })
+        if (BatchExporter is not { IsActive: true } && GroupInterceptor is not { IsActive: true })
         {
             return null;
         }
@@ -93,7 +92,11 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
             scoped var activityRef = new TraceActivityRef(activity);
 
             GroupInterceptor?.Stop(in activityRef);
-            BatchExporter?.Handle(in activityRef);
+
+            if (BatchExporter is { IsActive: true })
+            {
+                BatchExporter?.Handle(in activityRef);
+            }
         }
         finally
         {

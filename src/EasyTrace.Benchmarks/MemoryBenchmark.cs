@@ -105,12 +105,11 @@ public class MemoryBenchmark
             {
                 // Disable scheduled export, because benchmarking between Interceptor vs Processor.
                 ScheduledDelay = TimeSpan.Zero,
-            })
-            .AddInterceptor(_traceActivityInterceptor);
+            });
 
         if (IsExporter)
         {
-            builder.AddExporter(new FakeExporter());
+            builder.AddInterceptor(_traceActivityInterceptor);
         }
 
         _traceActivitySource = builder.Build(nameof(OtlpExportBenchmark));
