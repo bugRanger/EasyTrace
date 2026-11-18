@@ -46,6 +46,7 @@ public class TraceActivitySourceBuilder
     public TraceActivitySourceBuilder SetBatchExportOptions(BatchExportOptions batchExportOptions)
     {
         ThrowIfNotNull(_batchExportOptions);
+        batchExportOptions.Validate();
         _batchExportOptions = batchExportOptions;
         return this;
     }

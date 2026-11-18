@@ -151,7 +151,7 @@ public class ActivityExportTests
             .SetIdentifierGenerator(MoqIdentGenerator.Sequence(2))
             .SetBatchExportOptions(new BatchExportOptions
             {
-                MaxExportSize = uint.MaxValue,
+                MaxExportSize = 4,
                 ScheduledDelay = TimeSpan.Zero,
             })
             .AddExporter(inMemoryExporter)
@@ -181,7 +181,7 @@ public class ActivityExportTests
             .SetIdentifierGenerator(MoqIdentGenerator.Sequence(2))
             .SetBatchExportOptions(new BatchExportOptions
             {
-                MaxExportSize = uint.MaxValue,
+                MaxExportSize = 4,
                 ScheduledDelay = scheduledDelayMilliseconds,
             })
             .AddExporter(inMemoryExporter)
