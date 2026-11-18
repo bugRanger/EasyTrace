@@ -12,12 +12,11 @@ namespace EasyTrace;
 
 public class TraceActivitySource(string name, Version? version = null) : IDisposable
 {
-    private readonly ThreadLocal<TraceActivity?> _parentActivityByThreadLocal = new();
-
     private readonly ThreadLocal<TraceActivityPool> _poolActivityByThreadLocal = new();
 
     internal static readonly TraceActivitySource Empty = new(nameof(Empty));
 
+    internal TraceActivityParent Parent { get; init; } = new();
     internal TraceActivityFactory Factory { get; init; } = new(new TraceActivityLimits());
     internal ITraceTimeProvider TimeProvider { get; init; } = new TraceTimeProvider();
     internal ITraceIdentifierGenerator IdentifierGenerator { get; init; } = new Xoshiro256PlusPlus();
@@ -26,12 +25,6 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
     internal ITraceActivityInterceptor? GroupInterceptor { get; set; }
 
     private bool _disposed;
-
-    private TraceActivity? Parent
-    {
-        get => _parentActivityByThreadLocal.Value;
-        set => _parentActivityByThreadLocal.Value = value;
-    }
 
     private TraceActivityPool Pool
     {
@@ -57,7 +50,7 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
 
         var activity = Pool.Rent();
 
-        if (Parent == null)
+        if (Parent.Activity == null)
         {
             activity.Parent = null;
             activity.ParentId.Clear();
@@ -65,9 +58,9 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
         }
         else
         {
-            activity.Parent = Parent;
-            activity.ParentId.CopyFrom(Parent.SpanId);
-            activity.TraceId.CopyFrom(Parent.TraceId);
+            activity.Parent = Parent.Activity;
+            activity.ParentId.CopyFrom(Parent.Activity.SpanId);
+            activity.TraceId.CopyFrom(Parent.Activity.TraceId);
         }
 
         activity.SpanId.Generate(IdentifierGenerator);
@@ -79,7 +72,7 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
         // TODO: Support mark if parent is remote.
         activity.RemoteParent = false;
 
-        Parent = activity;
+        Parent.Activity = activity;
 
         scoped var activityRef = new TraceActivityRef(activity);
         GroupInterceptor?.Start(activityRef);
@@ -96,7 +89,7 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
                 activity.EndTime = TimeProvider.GetDateTime();
             }
 
-            Parent = activity.Parent;
+            Parent.Activity = activity.Parent;
             scoped var activityRef = new TraceActivityRef(activity);
 
             GroupInterceptor?.Stop(in activityRef);

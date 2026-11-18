@@ -17,6 +17,7 @@ public class TraceActivitySourceBuilder
     private BatchExportOptions? _batchExportOptions;
     private BatchExporter? _batchExporter;
     private Dictionary<string, string>? _resources;
+    private TraceActivityParent? _parent;
     private TraceActivityFactory? _factory;
     private ITraceTimeProvider? _timeProvider;
     private ITraceIdentifierGenerator? _identifierGenerator;
@@ -93,6 +94,8 @@ public class TraceActivitySourceBuilder
         _resources ??= GetResourceDefault();
         _timeProvider ??= new TraceTimeProvider();
         _identifierGenerator ??= new Xoshiro256PlusPlus();
+
+        _parent ??= new TraceActivityParent();
         _factory ??= new TraceActivityFactory(new TraceActivityLimits());
 
         _batchExportOptions ??= new BatchExportOptions();
@@ -100,6 +103,7 @@ public class TraceActivitySourceBuilder
 
         return new TraceActivitySource(name, version)
         {
+            Parent = _parent,
             Factory = _factory,
             TimeProvider = _timeProvider,
             IdentifierGenerator = _identifierGenerator,
