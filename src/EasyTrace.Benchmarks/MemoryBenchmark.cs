@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using BenchmarkDotNet.Attributes;
 using EasyTrace.Activity;
 using EasyTrace.Benchmarks.TestData;
@@ -103,7 +104,7 @@ public class MemoryBenchmark
             .SetBatchExportOptions(new BatchExportOptions
             {
                 // Disable scheduled export, because benchmarking between Interceptor vs Processor.
-                ScheduledDelayMilliseconds = uint.MinValue,
+                ScheduledDelay = TimeSpan.Zero,
             })
             .AddInterceptor(_traceActivityInterceptor);
 

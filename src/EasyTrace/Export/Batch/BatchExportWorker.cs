@@ -9,12 +9,18 @@ public sealed class BatchExportWorker<T> : IDisposable
 {
     private readonly T _exporter;
     private readonly AutoResetEvent _exportNotifier = new(false);
+    private Thread? _schedulerThread;
     private bool _disposed;
 
     /// <summary>
-    /// Gets the delay between exports in milliseconds.
+    /// Gets the delay between exports.
     /// </summary>
-    private readonly uint _scheduledDelayMilliseconds;
+    private readonly TimeSpan _scheduledDelay;
+
+    /// <summary>
+    /// Gets the delay for shutdown.
+    /// </summary>
+    private readonly TimeSpan _shutdownDelay;
 
     /// <summary>
     /// Gets the maximum batch size for exports.
@@ -26,27 +32,28 @@ public sealed class BatchExportWorker<T> : IDisposable
     /// </summary>
     private readonly CircularBuffer<TraceActivity> _circularBuffer;
 
-    private bool IsActive => _scheduledDelayMilliseconds != uint.MinValue;
-
-    private bool IsCurrentThread => _scheduledDelayMilliseconds == uint.MaxValue;
+    private readonly bool _isCurrentThread;
+    private bool _isActive;
 
     public BatchExportWorker(T exporter, TraceActivityFactory factory, BatchExportOptions options)
     {
         _exporter = exporter;
         _circularBuffer = new CircularBuffer<TraceActivity>(options.MaxQueueSize, factory);
         _maxExportSize = options.MaxExportSize;
-        _scheduledDelayMilliseconds = options.ScheduledDelayMilliseconds;
+        _scheduledDelay = options.ScheduledDelay;
+        _shutdownDelay = options.ShutdownDelay;
 
-        if (!IsActive || IsCurrentThread)
+        _isActive = options.ScheduledDelay >= TimeSpan.Zero;
+        _isCurrentThread = options.ScheduledDelay == TimeSpan.Zero;
+
+        if (_isActive && !_isCurrentThread)
         {
-            return;
+            _schedulerThread = new Thread(SchedulerLoop)
+            {
+                IsBackground = true, Name = $"Batch-Export-For-{exporter.GetType().Name}",
+            };
+            _schedulerThread.Start();
         }
-
-        var schedulerThread = new Thread(SchedulerLoop)
-        {
-            IsBackground = true, Name = $"Batch-Export-For-{exporter.GetType().Name}",
-        };
-        schedulerThread.Start();
     }
 
     ~BatchExportWorker()
@@ -56,12 +63,12 @@ public sealed class BatchExportWorker<T> : IDisposable
 
     public bool Push(in TraceActivityRef activityRef)
     {
-        return IsActive && _circularBuffer.Push(in activityRef, 50_000);
+        return _isActive && _circularBuffer.Push(in activityRef, 50_000);
     }
 
     public bool TryExport()
     {
-        if (!IsActive)
+        if (!_isActive)
         {
             return false;
         }
@@ -73,7 +80,7 @@ public sealed class BatchExportWorker<T> : IDisposable
 
         try
         {
-            if (IsCurrentThread)
+            if (_isCurrentThread)
             {
                 PerformExport();
             }
@@ -105,7 +112,15 @@ public sealed class BatchExportWorker<T> : IDisposable
 
         if (disposing)
         {
-            _exportNotifier.Set();
+            if (_shutdownDelay > TimeSpan.Zero)
+            {
+                Volatile.Write(ref _isActive, false);
+
+                _exportNotifier.Set();
+                _schedulerThread?.Join(_shutdownDelay);
+                _schedulerThread = null;
+            }
+
             _exportNotifier.Dispose();
         }
 
@@ -116,7 +131,7 @@ public sealed class BatchExportWorker<T> : IDisposable
     {
         var triggers = new WaitHandle[]
         {
-            _exportNotifier
+            _exportNotifier,
         };
 
         while (true)
@@ -125,7 +140,7 @@ public sealed class BatchExportWorker<T> : IDisposable
             {
                 try
                 {
-                    WaitHandle.WaitAny(triggers, (int)_scheduledDelayMilliseconds);
+                    WaitHandle.WaitAny(triggers, _scheduledDelay);
                 }
                 catch (ObjectDisposedException)
                 {
@@ -133,7 +148,20 @@ public sealed class BatchExportWorker<T> : IDisposable
                 }
             }
 
-            PerformExport();
+            var active = Volatile.Read(ref _isActive);
+            if (active)
+            {
+                PerformExport();
+            }
+            else
+            {
+                while (_circularBuffer.Count > 0)
+                {
+                    PerformExport();
+                }
+
+                return;
+            }
         }
     }
 
