@@ -1,36 +1,36 @@
 ```
 
 BenchmarkDotNet v0.15.8, Windows 10 (10.0.19045.6456/22H2/2022Update)
-AMD Ryzen 3 2200G with Radeon Vega Graphics 3.50GHz, 1 CPU, 4 logical and 4 physical cores
+AMD Ryzen 7 5700G with Radeon Graphics 3.80GHz, 1 CPU, 16 logical and 8 physical cores
 .NET SDK 10.0.302
-  [Host]     : .NET 9.0.14 (9.0.14, 9.0.1426.11910), X64 RyuJIT x86-64-v3
-  DefaultJob : .NET 9.0.14 (9.0.14, 9.0.1426.11910), X64 RyuJIT x86-64-v3
+  [Host]     : .NET 9.0.18 (9.0.18, 9.0.1826.31522), X64 RyuJIT x86-64-v3
+  DefaultJob : .NET 9.0.18 (9.0.18, 9.0.1826.31522), X64 RyuJIT x86-64-v3
 
 Categories=AllowOnCI  
 
 ```
-| Method                      | AttributeType | IsExporter | Mean        | Error     | StdDev     | Ratio           | RatioSD | Gen0   | Allocated | Alloc Ratio |
-|---------------------------- |-------------- |----------- |------------:|----------:|-----------:|----------------:|--------:|-------:|----------:|------------:|
-| **System.Diagnostics.Activity** | **-**             | **False**      | **1,131.65 ns** | **22.371 ns** |  **21.971 ns** |        **baseline** |        **** | **0.5798** |    **1216 B** |            **** |
-| EasyTrace.Activity          | -             | False      |    16.68 ns |  0.244 ns |   0.228 ns |   67.87x faster |   1.57x |      - |         - |          NA |
-|                             |               |            |             |           |            |                 |         |        |           |             |
-| **System.Diagnostics.Activity** | **-**             | **True**       | **1,074.85 ns** | **21.251 ns** |  **33.085 ns** |        **baseline** |        **** | **0.5798** |    **1216 B** |            **** |
-| EasyTrace.Activity          | -             | True       |   524.01 ns | 10.300 ns |  16.337 ns |    2.05x faster |   0.09x |      - |         - |          NA |
-|                             |               |            |             |           |            |                 |         |        |           |             |
-| **System.Diagnostics.Activity** | **Double**        | **False**      | **2,707.28 ns** | **53.256 ns** | **101.325 ns** |        **baseline** |        **** | **1.5564** |    **3256 B** |            **** |
-| EasyTrace.Activity          | Double        | False      |    15.93 ns |  0.350 ns |   0.525 ns | 170.162x faster |   8.37x |      - |         - |          NA |
-|                             |               |            |             |           |            |                 |         |        |           |             |
-| **System.Diagnostics.Activity** | **Double**        | **True**       | **2,612.02 ns** | **42.183 ns** |  **37.394 ns** |        **baseline** |        **** | **1.5564** |    **3256 B** |            **** |
-| EasyTrace.Activity          | Double        | True       | 1,332.76 ns | 26.403 ns |  30.406 ns |    1.96x faster |   0.05x |      - |         - |          NA |
-|                             |               |            |             |           |            |                 |         |        |           |             |
-| **System.Diagnostics.Activity** | **Int32**         | **False**      | **2,743.77 ns** | **49.344 ns** |  **67.543 ns** |        **baseline** |        **** | **1.5564** |    **3256 B** |            **** |
-| EasyTrace.Activity          | Int32         | False      |    16.01 ns |  0.359 ns |   0.504 ns | 171.556x faster |   6.79x |      - |         - |          NA |
-|                             |               |            |             |           |            |                 |         |        |           |             |
-| **System.Diagnostics.Activity** | **Int32**         | **True**       | **2,648.66 ns** | **49.519 ns** |  **46.320 ns** |        **baseline** |        **** | **1.5564** |    **3256 B** |            **** |
-| EasyTrace.Activity          | Int32         | True       | 1,296.81 ns | 25.199 ns |  30.946 ns |    2.04x faster |   0.06x |      - |         - |          NA |
-|                             |               |            |             |           |            |                 |         |        |           |             |
-| **System.Diagnostics.Activity** | **String**        | **False**      | **2,465.47 ns** | **49.319 ns** |  **62.373 ns** |        **baseline** |        **** | **1.2093** |    **2536 B** |            **** |
-| EasyTrace.Activity          | String        | False      |    15.70 ns |  0.346 ns |   0.496 ns | 157.187x faster |   6.17x |      - |         - |          NA |
-|                             |               |            |             |           |            |                 |         |        |           |             |
-| **System.Diagnostics.Activity** | **String**        | **True**       | **2,423.92 ns** | **47.133 ns** |  **57.883 ns** |        **baseline** |        **** | **1.2093** |    **2536 B** |            **** |
-| EasyTrace.Activity          | String        | True       | 1,377.03 ns | 26.858 ns |  25.123 ns |    1.76x faster |   0.05x |      - |         - |          NA |
+| Method                      | AttributeType | IsExporter | Mean         | Error      | StdDev     | Ratio           | RatioSD | Gen0   | Gen1   | Allocated | Alloc Ratio |
+|---------------------------- |-------------- |----------- |-------------:|-----------:|-----------:|----------------:|--------:|-------:|-------:|----------:|------------:|
+| **System.Diagnostics.Activity** | **-**             | **False**      |   **587.180 ns** |  **7.0929 ns** |  **6.6347 ns** |        **baseline** |        **** | **0.1450** |      **-** |    **1216 B** |            **** |
+| EasyTrace.Activity          | -             | False      |     9.195 ns |  0.0423 ns |  0.0375 ns |   63.86x faster |   0.74x |      - |      - |         - |          NA |
+|                             |               |            |              |            |            |                 |         |        |        |           |             |
+| **System.Diagnostics.Activity** | **-**             | **True**       |   **585.602 ns** |  **6.6770 ns** |  **5.9190 ns** |        **baseline** |        **** | **0.1450** |      **-** |    **1216 B** |            **** |
+| EasyTrace.Activity          | -             | True       |   292.460 ns |  1.6734 ns |  1.5653 ns |    2.00x faster |   0.02x |      - |      - |         - |          NA |
+|                             |               |            |              |            |            |                 |         |        |        |           |             |
+| **System.Diagnostics.Activity** | **Double**        | **False**      | **1,218.633 ns** | **22.7352 ns** | **18.9849 ns** |        **baseline** |        **** | **0.3891** | **0.0019** |    **3256 B** |            **** |
+| EasyTrace.Activity          | Double        | False      |     8.634 ns |  0.0408 ns |  0.0319 ns | 141.138x faster |   2.18x |      - |      - |         - |          NA |
+|                             |               |            |              |            |            |                 |         |        |        |           |             |
+| **System.Diagnostics.Activity** | **Double**        | **True**       | **1,249.563 ns** | **15.0373 ns** | **14.0659 ns** |        **baseline** |        **** | **0.3891** | **0.0019** |    **3256 B** |            **** |
+| EasyTrace.Activity          | Double        | True       |   738.551 ns |  2.5014 ns |  2.3398 ns |    1.69x faster |   0.02x |      - |      - |         - |          NA |
+|                             |               |            |              |            |            |                 |         |        |        |           |             |
+| **System.Diagnostics.Activity** | **Int32**         | **False**      | **1,157.462 ns** | **19.6824 ns** | **17.4480 ns** |        **baseline** |        **** | **0.3891** | **0.0019** |    **3256 B** |            **** |
+| EasyTrace.Activity          | Int32         | False      |    10.968 ns |  0.0490 ns |  0.0435 ns | 105.534x faster |   1.59x |      - |      - |         - |          NA |
+|                             |               |            |              |            |            |                 |         |        |        |           |             |
+| **System.Diagnostics.Activity** | **Int32**         | **True**       | **1,168.177 ns** | **11.9781 ns** | **10.6183 ns** |        **baseline** |        **** | **0.3891** | **0.0019** |    **3256 B** |            **** |
+| EasyTrace.Activity          | Int32         | True       |   691.710 ns |  2.9014 ns |  2.7140 ns |    1.69x faster |   0.02x |      - |      - |         - |          NA |
+|                             |               |            |              |            |            |                 |         |        |        |           |             |
+| **System.Diagnostics.Activity** | **String**        | **False**      | **1,119.679 ns** | **20.4169 ns** | **19.0979 ns** |        **baseline** |        **** | **0.3014** | **0.0019** |    **2536 B** |            **** |
+| EasyTrace.Activity          | String        | False      |     8.993 ns |  0.0329 ns |  0.0292 ns | 124.513x faster |   2.09x |      - |      - |         - |          NA |
+|                             |               |            |              |            |            |                 |         |        |        |           |             |
+| **System.Diagnostics.Activity** | **String**        | **True**       | **1,178.177 ns** | **19.9720 ns** | **18.6818 ns** |        **baseline** |        **** | **0.3014** | **0.0019** |    **2536 B** |            **** |
+| EasyTrace.Activity          | String        | True       |   718.697 ns |  3.4079 ns |  2.8457 ns |    1.64x faster |   0.03x |      - |      - |         - |          NA |
