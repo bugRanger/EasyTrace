@@ -47,6 +47,13 @@ public class HttpExporter : FastHttpClient, ITraceActivityExporter
             _serializerBySource[activityRef.Source] = serializer;
         }
 
+        // TODO: Impl it.
+        // var size = serializer.CalculateSize(activityRef);
+        // if (serializer.Capacity - serializer.Size < size)
+        // {
+        //     serializer.EnsureCapacity(size);
+        // }
+        
         serializer.Write(activityRef);
     }
 
