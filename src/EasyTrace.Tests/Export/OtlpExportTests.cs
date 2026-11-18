@@ -126,7 +126,7 @@ public class OtlpExportTests
                 })
                 .SetBatchExportOptions(new BatchExportOptions
                 {
-                    MaxExportSize = 2,
+                    MaxExportSize = 3,
                 })
                 .AddOtlpExporter(new HttpExportParameters
                 {
@@ -143,18 +143,14 @@ public class OtlpExportTests
                 {
                     using var _ = source1.Start();
                     using var __ = source2.Start();
-                }
-                Task.Delay(100).Wait();
-
-                {
-                    using var _ = source1.Start();
-                    using var __ = source1.Start();
+                    using var ___ = source2.Start();
                 }
                 Task.Delay(100).Wait();
 
                 {
                     using var _ = source2.Start();
-                    using var __ = source2.Start();
+                    using var __ = source1.Start();
+                    using var ___ = source1.Start();
                 }
                 Task.Delay(100).Wait();
             }
