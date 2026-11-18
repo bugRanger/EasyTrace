@@ -1,19 +1,14 @@
-﻿using System.Collections.Concurrent;
-using EasyTrace.Activity;
+﻿using EasyTrace.Activity;
 
 namespace EasyTrace.Export;
 
-public sealed class GroupExporter : ITraceActivityExporter
+public sealed class GroupExporter(ITraceActivityExporter[] exporters) : ITraceActivityExporter
 {
-    private readonly ConcurrentBag<ITraceActivityExporter> _exporters = [];
-
-    public void Add(ITraceActivityExporter exporter) => _exporters.Add(exporter);
-
-    public int Count => _exporters.Count;
+    public int Count => exporters.Length;
 
     void ITraceActivityExporter.Export(scoped in TraceActivityRef activityRef)
     {
-        foreach (var exporter in _exporters)
+        foreach (var exporter in exporters)
         {
             exporter.Export(activityRef);
         }
@@ -21,7 +16,7 @@ public sealed class GroupExporter : ITraceActivityExporter
 
     void ITraceActivityExporter.Flush()
     {
-        foreach (var exporter in _exporters)
+        foreach (var exporter in exporters)
         {
             exporter.Flush();
         }

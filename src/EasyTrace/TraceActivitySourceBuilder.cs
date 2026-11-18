@@ -12,8 +12,8 @@ namespace EasyTrace;
 
 public class TraceActivitySourceBuilder
 {
-    private readonly GroupInterceptor _interceptors = new();
-    private readonly GroupExporter _exporters = new();
+    private readonly List<ITraceActivityInterceptor> _interceptors = [];
+    private readonly List<ITraceActivityExporter> _exporters = [];
     private BatchExportOptions? _batchExportOptions;
     private BatchExporter? _batchExporter;
     private Dictionary<string, string>? _resources;
@@ -45,7 +45,6 @@ public class TraceActivitySourceBuilder
 
     public TraceActivitySourceBuilder SetBatchExportOptions(BatchExportOptions batchExportOptions)
     {
-        ThrowIfNotNull(_batchExporter);
         ThrowIfNotNull(_batchExportOptions);
         _batchExportOptions = batchExportOptions;
         return this;
@@ -53,6 +52,7 @@ public class TraceActivitySourceBuilder
 
     public TraceActivitySourceBuilder AddOtlpExporter(HttpExportParameters parameters)
     {
+        ThrowIfNotNull(_batchExporter, "No changes are permitted after the first build");
         parameters.Validate();
         var exporter = new HttpExporter(parameters);
         exporter.WarmUp();
@@ -62,12 +62,14 @@ public class TraceActivitySourceBuilder
 
     public TraceActivitySourceBuilder AddExporter(ITraceActivityExporter exporter)
     {
+        ThrowIfNotNull(_batchExporter, "No changes are permitted after the first build");
         _exporters.Add(exporter);
         return this;
     }
 
     public TraceActivitySourceBuilder AddInterceptor(ITraceActivityInterceptor interceptor)
     {
+        ThrowIfNotNull(_batchExporter, "No changes are permitted after the first build");
         _interceptors.Add(interceptor);
         return this;
     }
@@ -101,7 +103,7 @@ public class TraceActivitySourceBuilder
         _factory ??= new TraceActivityFactory(new TraceActivityLimits());
 
         _batchExportOptions ??= new BatchExportOptions();
-        _batchExporter ??= new BatchExporter(_exporters, _factory, _batchExportOptions);
+        _batchExporter ??= new BatchExporter(new GroupExporter([.. _exporters]), _factory, _batchExportOptions);
 
         return new TraceActivitySource(name, version)
         {
@@ -111,7 +113,7 @@ public class TraceActivitySourceBuilder
             IdentifierGenerator = _identifierGenerator,
             Resources = [.. _resources],
             BatchExporter = _batchExporter,
-            GroupInterceptor = _interceptors,
+            GroupInterceptor = new GroupInterceptor([.. _interceptors]),
         };
     }
 
