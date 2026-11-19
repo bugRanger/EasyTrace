@@ -11,10 +11,12 @@ public class ProtobufSerializer
     private readonly int _traceLengthPosition;
     private readonly int _spansLengthPosition;
     private readonly int _messageWritePosition;
+    private readonly int _resizeFrame;
 
-    public ProtobufSerializer(int capacity, TraceActivitySource activitySource)
+    public ProtobufSerializer(int capacity, int resizeFrame, TraceActivitySource activitySource)
         : this(new ProtobufStream(capacity), activitySource)
     {
+        _resizeFrame = resizeFrame;
     }
 
     public ProtobufSerializer(ProtobufStream stream, TraceActivitySource activitySource)
@@ -185,9 +187,9 @@ public class ProtobufSerializer
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static int CalculateSize(in TraceActivityRef activityRef)
+    private int CalculateSize(in TraceActivityRef activityRef)
     {
-        // TODO: Найти какие байты были не учтены.
-        return ProtobufCalculator.CalculateSpanSize(activityRef) * 2;
+        var spanSize = ProtobufCalculator.CalculateSpanSize(activityRef);
+        return Math.Max(spanSize, _resizeFrame);
     }
 }

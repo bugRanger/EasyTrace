@@ -14,6 +14,7 @@ public static class ProtobufCalculator
     private const int WireType64Bit = 1; // fixed64, double
     private const int WireTypeLengthDelimited = 2; // string, bytes, embedded messages
     private const int WireType32Bit = 5; // fixed32, float
+    private const int HeaderSize = 5;
 
     private static readonly DateTime UnixEpoch = new(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
@@ -136,7 +137,7 @@ public static class ProtobufCalculator
             size += ComputeTagSize(16, WireType32Bit) + 4;
         }
 
-        return size;
+        return size + HeaderSize;
     }
 
     // --- Вложенные сообщения OTLP ---
@@ -330,7 +331,7 @@ public static class ProtobufCalculator
     {
         int utf8ByteCount = Encoding.UTF8.GetByteCount(value);
         return ComputeTagSize(fieldNumber, WireTypeLengthDelimited)
-               + ComputeLengthDelimitedSize(utf8ByteCount);
+               + ComputeLengthDelimitedSize(utf8ByteCount) + 1;
     }
 
     private static int ComputeTagSize(int fieldNumber, int wireType)
