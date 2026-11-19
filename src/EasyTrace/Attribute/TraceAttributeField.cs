@@ -8,7 +8,7 @@ public struct TraceAttributeField
 {
     [FieldOffset(0)] private TraceAttributeKind _kind;
     [FieldOffset(4)] private int _charLength = 0;
-    [FieldOffset(8)] private long _int = 0;
+    [FieldOffset(8)] private long _long = 0;
     [FieldOffset(8)] private double _double = 0;
     [FieldOffset(16)] private readonly char[] _chars;
 
@@ -29,8 +29,8 @@ public struct TraceAttributeField
                 _kind = TraceAttributeKind.String;
                 return _chars.AsMemory(0, _charLength);
 
-            case TraceAttributeKind.Int:
-                _int.TryFormat(_chars, out _charLength, provider: CultureInfo.InvariantCulture);
+            case TraceAttributeKind.Long:
+                _long.TryFormat(_chars, out _charLength, provider: CultureInfo.InvariantCulture);
                 _kind = TraceAttributeKind.String;
                 return _chars.AsMemory(0, _charLength);
 
@@ -53,8 +53,8 @@ public struct TraceAttributeField
                 _double = fieldRef._double;
                 break;
 
-            case TraceAttributeKind.Int:
-                _int = fieldRef._int;
+            case TraceAttributeKind.Long:
+                _long = fieldRef._long;
                 break;
 
             default:

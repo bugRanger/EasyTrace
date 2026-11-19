@@ -4,5 +4,5 @@ public enum TraceAttributeKind : byte
 {
     String = 0,
     Double = 1,
-    Int = 2,
+    Long = 2,
 }

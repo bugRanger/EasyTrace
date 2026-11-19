@@ -6,14 +6,14 @@ namespace EasyTrace.Attribute;
 public readonly ref struct TraceAttributeFieldRef
 {
     [FieldOffset(0)] internal readonly TraceAttributeKind _kind;
-    [FieldOffset(8)] internal readonly long _int = 0;
+    [FieldOffset(8)] internal readonly long _long = 0;
     [FieldOffset(8)] internal readonly double _double = 0;
     [FieldOffset(16)] internal readonly ReadOnlyMemory<char> _string = string.Empty.AsMemory();
 
-    private TraceAttributeFieldRef(int value)
+    private TraceAttributeFieldRef(long value)
     {
-        _kind = TraceAttributeKind.Int;
-        _int = value;
+        _kind = TraceAttributeKind.Long;
+        _long = value;
     }
 
     private TraceAttributeFieldRef(double value)
@@ -35,6 +35,7 @@ public readonly ref struct TraceAttributeFieldRef
     }
 
     public static implicit operator TraceAttributeFieldRef(int value) => new(value);
+    public static implicit operator TraceAttributeFieldRef(long value) => new(value);
     public static implicit operator TraceAttributeFieldRef(double value) => new(value);
     public static implicit operator TraceAttributeFieldRef(string value) => new(value);
     public static implicit operator TraceAttributeFieldRef(ReadOnlyMemory<char> value) => new(value);
