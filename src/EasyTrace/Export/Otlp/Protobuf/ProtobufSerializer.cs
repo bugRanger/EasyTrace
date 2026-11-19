@@ -29,7 +29,11 @@ public class ProtobufSerializer
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Write(scoped in TraceActivityRef activityRef) => WriteActivity(Stream, activityRef);
+    public void Write(scoped in TraceActivityRef activityRef)
+    {
+        Resize(CalculateSize(activityRef));
+        WriteActivity(Stream, activityRef);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsEmpty() => _messageWritePosition == Stream.Position;
@@ -42,6 +46,15 @@ public class ProtobufSerializer
         var bytes = Stream.AsSpan();
         Stream.Reset(_messageWritePosition);
         return bytes;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void Resize(int size)
+    {
+        if (Stream.Capacity - Stream.Position < size)
+        {
+            Stream.Resize(Stream.Position + size);
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -149,5 +162,12 @@ public class ProtobufSerializer
         const long unixEpochTicks = 621355968000000000;
 
         return (ulong)(dateTime.Ticks - unixEpochTicks) * nanosecondsPerTicks;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int CalculateSize(in TraceActivityRef activityRef)
+    {
+        // TODO: Impl it.
+        return 0;
     }
 }
