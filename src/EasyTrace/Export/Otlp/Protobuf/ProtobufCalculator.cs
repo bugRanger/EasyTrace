@@ -4,12 +4,7 @@ using System.Text;
 using EasyTrace.Activity;
 using EasyTrace.Attribute;
 
-namespace EasyTrace.Tests.Export.TestData;
-
-public ref struct ProtobufCalculateState
-{
-    
-} 
+namespace EasyTrace.Export.Otlp.Protobuf;
 
 // --- Калькулятор размера Protobuf OTLP Span ---
 public static class ProtobufCalculator
@@ -24,9 +19,8 @@ public static class ProtobufCalculator
     /// <summary>
     /// Удобная перегрузка для прямого вызова с <see cref="System.Diagnostics.Activity"/>.
     /// </summary>
-    public static int CalculateSpanSize(TraceActivity? activity)
+    public static int CalculateSpanSize(in TraceActivityRef activity)
     {
-        if (activity is null) return 0;
         var span = new TraceActivitySpanAdapter(activity);
         return CalculateSpanSize(ref span);
     }
@@ -394,7 +388,7 @@ public interface ISpanData
 // --- 1.1 Адаптер для System.Diagnostics.Activity ---
 internal readonly ref struct TraceActivitySpanAdapter : ISpanData
 {
-    public TraceActivitySpanAdapter(TraceActivity activity)
+    public TraceActivitySpanAdapter(TraceActivityRef activity)
     {
         TraceId = activity.TraceId.IsEmpty
             ? default
@@ -425,10 +419,10 @@ internal readonly ref struct TraceActivitySpanAdapter : ISpanData
                         TraceAttributeKind.String => (object?)s.Value.AsChars(),
                         TraceAttributeKind.Double => (object?)s.Value.AsDouble(),
                         TraceAttributeKind.Long => (object?)s.Value.AsLong(),
+                        TraceAttributeKind.Boolean => (object?)s.Value.AsBool(),
                         _ => null,
                     };
 
-                    // TODO: Add type switch.
                     return KeyValuePair.Create(s.Name.ToString(), valueTyped);
                 }));
         Events = [];

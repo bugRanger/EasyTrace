@@ -187,7 +187,6 @@ public class ProtobufSerializer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int CalculateSize(in TraceActivityRef activityRef)
     {
-        // TODO: Impl it.
-        return 0;
+        return ProtobufCalculator.CalculateSpanSize(activityRef);
     }
 }
