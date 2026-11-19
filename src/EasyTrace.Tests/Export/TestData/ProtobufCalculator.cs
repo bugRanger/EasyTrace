@@ -2,8 +2,14 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using EasyTrace.Activity;
+using EasyTrace.Attribute;
 
 namespace EasyTrace.Tests.Export.TestData;
+
+public ref struct ProtobufCalculateState
+{
+    
+} 
 
 // --- Калькулятор размера Protobuf OTLP Span ---
 public static class ProtobufCalculator
@@ -80,7 +86,7 @@ public static class ProtobufCalculator
         int otelKind = MapSpanKind(span.Kind);
         if (otelKind != 0)
         {
-            size += ComputeTagSize(6, WireTypeVarInt) + ComputeVarint32Size((uint)otelKind);
+            size += ComputeTagSize(6, WireTypeVarInt) + ComputeVarInt32Size((uint)otelKind);
         }
 
         // 7. fixed64 start_time_unix_nano = 7
@@ -232,7 +238,7 @@ public static class ProtobufCalculator
         // 3. StatusCode code = 3
         if (code != 0)
         {
-            size += ComputeTagSize(3, WireTypeVarInt) + ComputeVarint32Size((uint)code);
+            size += ComputeTagSize(3, WireTypeVarInt) + ComputeVarInt32Size((uint)code);
         }
 
         return size;
@@ -268,7 +274,7 @@ public static class ProtobufCalculator
                 return ComputeTagSize(2, WireTypeVarInt) + 1;
             case int or long or short or sbyte or byte or uint or ushort or ulong:
                 long longVal = Convert.ToInt64(value, CultureInfo.InvariantCulture);
-                return ComputeTagSize(3, WireTypeVarInt) + ComputeVarint64Size((ulong)longVal);
+                return ComputeTagSize(3, WireTypeVarInt) + ComputeVarInt64Size((ulong)longVal);
             case double or float or decimal:
                 return ComputeTagSize(4, WireType64Bit) + 8;
             case Array array:
@@ -335,15 +341,15 @@ public static class ProtobufCalculator
     private static int ComputeTagSize(int fieldNumber, int wireType)
     {
         uint key = (uint)((fieldNumber << 3) | wireType);
-        return ComputeVarint32Size(key);
+        return ComputeVarInt32Size(key);
     }
 
     private static int ComputeLengthDelimitedSize(int payloadLength)
     {
-        return ComputeVarint32Size((uint)payloadLength) + payloadLength;
+        return ComputeVarInt32Size((uint)payloadLength) + payloadLength;
     }
 
-    private static int ComputeVarint32Size(uint value)
+    private static int ComputeVarInt32Size(uint value)
     {
         if (value < (1u << 7)) return 1;
         if (value < (1u << 14)) return 2;
@@ -352,7 +358,7 @@ public static class ProtobufCalculator
         return 5;
     }
 
-    private static int ComputeVarint64Size(ulong value)
+    private static int ComputeVarInt64Size(ulong value)
     {
         int size = 1;
         while (value >= 0x80)
@@ -412,7 +418,19 @@ internal readonly ref struct TraceActivitySpanAdapter : ISpanData
             activity.Attributes
                 .AsSpan()
                 .ToArray()
-                .Select(s => KeyValuePair.Create(s.Name.ToString(), (object?)s.Value)));
+                .Select(s =>
+                {
+                    var valueTyped = s.Value.Kind switch
+                    {
+                        TraceAttributeKind.String => (object?)s.Value.AsChars(),
+                        TraceAttributeKind.Double => (object?)s.Value.AsDouble(),
+                        TraceAttributeKind.Long => (object?)s.Value.AsLong(),
+                        _ => null,
+                    };
+
+                    // TODO: Add type switch.
+                    return KeyValuePair.Create(s.Name.ToString(), valueTyped);
+                }));
         Events = [];
         Links = [];
     }

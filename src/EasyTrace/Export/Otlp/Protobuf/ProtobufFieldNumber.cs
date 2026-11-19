@@ -44,6 +44,9 @@ public class ProtobufFieldNumber
 
     // .. AnyValue
     internal const int AnyValueAsString = 1;
+    internal const int AnyValueAsBool = 2;
+    internal const int AnyValueAsInt = 3;
+    internal const int AnyValueAsDouble = 4;
 
     private ProtobufFieldNumber(byte value) => _value = value;
 

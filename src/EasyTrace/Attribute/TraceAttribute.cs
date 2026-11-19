@@ -5,9 +5,9 @@ public sealed class TraceAttribute(int nameCapacity, int valueCapacity)
     private TraceAttributeField _name = new(nameCapacity);
     private TraceAttributeField _value = new(valueCapacity);
 
-    public ReadOnlyMemory<char> Name => _name.Get();
+    public ReadOnlySpan<char> Name => _name.PackInChars();
 
-    public ReadOnlyMemory<char> Value => _value.Get();
+    public TraceAttributeField Value => _value;
 
     internal void Write(in TraceAttributeFieldRef name, in TraceAttributeFieldRef field)
     {
