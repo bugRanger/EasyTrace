@@ -17,7 +17,9 @@ public class StressExportTests
     }
 
     [Test]
-    public Task Stress1()
+    [TestCase(0)]
+    [TestCase(1024)]
+    public Task Stress1(int resizeFrame)
     {
         // Arrange
         var endPoint = new Uri("http://127.0.0.1:4318");
@@ -36,10 +38,11 @@ public class StressExportTests
                 .AddOtlpExporter(new HttpExportParameters
                 {
                     EndPoint = endPoint,
+                    BufferSize = 1024,
+                    ResizeFrame = resizeFrame,
                 })
                 .Build(nameof(StressExportTests));
-            
-            
+
             // Act
             for (var i = 0; i < 500; i++)
             {

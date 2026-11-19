@@ -42,8 +42,11 @@ public class HttpExporter : FastHttpClient, ITraceActivityExporter
     {
         if (!_serializerBySource.TryGetValue(activityRef.Source, out var serializer))
         {
-            // TODO: Add buffer size configure from builder that accounts for constraints (resource size, tag size, etc.).
-            serializer = new ProtobufSerializer(_parameters.BufferSize, activityRef.Source);
+            serializer = new ProtobufSerializer(
+                _parameters.BufferSize,
+                _parameters.ResizeFrame,
+                activityRef.Source);
+
             _serializerBySource[activityRef.Source] = serializer;
         }
 
