@@ -18,6 +18,12 @@ public class TraceIdentifier(int byteLength)
         source.AsReadOnlySpan().CopyTo(_bytes);
     }
 
+    public Span<byte> AsSpan()
+    {
+        IsEmpty = false;
+        return _bytes.AsSpan(0, byteLength);
+    }
+
     public ReadOnlySpan<byte> AsReadOnlySpan()
     {
         return IsEmpty ? ReadOnlySpan<byte>.Empty : new ReadOnlySpan<byte>(_bytes, 0, byteLength);
