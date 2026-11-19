@@ -16,7 +16,9 @@ public class ProtobufStream(int capacity)
     private const int MaskBitsLow = 0b_0111_1111;
     private const int MaskBitHigh = 0b_1000_0000;
 
-    private readonly byte[] _buffer = new byte[capacity];
+    private byte[] _buffer = new byte[capacity];
+
+    public int Capacity => _buffer.Length;
 
     public int Position { get; private set; }
 
@@ -36,6 +38,9 @@ public class ProtobufStream(int capacity)
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset(int offset = 0) => Position = offset;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Resize(int capacity) => Array.Resize(ref _buffer, capacity);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public LengthScope WriteLengthScope() => new(this);
