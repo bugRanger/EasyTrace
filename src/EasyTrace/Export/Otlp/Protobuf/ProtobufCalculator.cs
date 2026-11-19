@@ -6,6 +6,7 @@ using EasyTrace.Attribute;
 
 namespace EasyTrace.Export.Otlp.Protobuf;
 
+// TODO: Заменить на версию без аллокаций. 
 // --- Калькулятор размера Protobuf OTLP Span ---
 public static class ProtobufCalculator
 {
@@ -19,7 +20,7 @@ public static class ProtobufCalculator
     /// <summary>
     /// Удобная перегрузка для прямого вызова с <see cref="System.Diagnostics.Activity"/>.
     /// </summary>
-    public static int CalculateSpanSize(in TraceActivityRef activity)
+    public static int CalculateSpanSize(scoped in TraceActivityRef activity)
     {
         var span = new TraceActivitySpanAdapter(activity);
         return CalculateSpanSize(ref span);
