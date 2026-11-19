@@ -19,14 +19,13 @@ public class OtlpExportTests
     [Test]
     public Task HttpExportWithOneSource()
     {
+        // Arrange
         var endPoint = new Uri("http://127.0.0.1:4318");
-
-        // Start local HTTP-server.
         var server = new TestHttpServerRunner(IPAddress.Any, endPoint.Port);
 
         try
         {
-            // Make activity source.
+            // - Make activity source.
             var source = new TraceActivitySourceBuilder()
                 .SetTimeProvider(new MoqTimeProvider())
                 .SetIdentifierGenerator(MoqIdentGenerator.Sequence(9))
@@ -48,7 +47,8 @@ public class OtlpExportTests
                 })
                 .Build(nameof(ActivityExportTests));
 
-            // Make activity for batch export.
+            // Act
+            // - Make activity for batch export.
             {
                 {
                     using (var _ = source.Start()) {}
@@ -72,14 +72,14 @@ public class OtlpExportTests
                 Task.Delay(100).Wait();
             }
 
-            // Wait sending.
+            // Assert
+            // - Wait sending.
             Task.Delay(500).Wait();
-            // Check activity export in batch.
+            // - Check activity export in batch.
             return Verify(server.Cache.GetValues(), Settings);
         }
         finally
         {
-            // Stop HTTP-server.
             server.Dispose();
         }
     }
@@ -87,14 +87,13 @@ public class OtlpExportTests
     [Test]
     public Task HttpExportWithTwoSource()
     {
+        // Arrange
         var endPoint = new Uri("http://127.0.0.1:4318");
-
-        // Start local HTTP-server.
         var server = new TestHttpServerRunner(IPAddress.Any, endPoint.Port);
 
         try
         {
-            // Make builder.
+            // - Make builder.
             var builder = new TraceActivitySourceBuilder()
                 .SetTimeProvider(new MoqTimeProvider())
                 .SetIdentifierGenerator(MoqIdentGenerator.Sequence(6))
@@ -115,11 +114,12 @@ public class OtlpExportTests
                     BufferSize = 1024 * 4,
                 });
 
-            // Make activity source.
+            // - Make activity source.
             var source1 = builder.Build("Source1");
             var source2 = builder.Build("Source2");
 
-            // Make activity for batch export.
+            // Act
+            // - Make activity for batch export.
             {
                 {
                     using var _ = source1.Start();
@@ -136,14 +136,59 @@ public class OtlpExportTests
                 Task.Delay(100).Wait();
             }
 
-            // Wait sending.
+            // Assert
+            // - Wait sending.
             Task.Delay(500).Wait();
-            // Check activity export in batch.
+            // - Check activity export in batch.
             return Verify(server.Cache.GetValues(), Settings);
         }
         finally
         {
-            // Stop HTTP-server.
+            server.Dispose();
+        }
+    }
+    
+    [Test]
+    [TestCase(0)]
+    [TestCase(1024)]
+    public Task HttpExportWithHighStressLoad(int resizeFrame)
+    {
+        // Arrange
+        var endPoint = new Uri("http://127.0.0.1:4318");
+        var server = new TestHttpServerRunner(IPAddress.Any, endPoint.Port);
+
+        try
+        {
+            // - Make activity source.
+            var source = new TraceActivitySourceBuilder()
+                .SetTimeProvider(new MoqTimeProvider())
+                .SetIdentifierGenerator(MoqIdentGenerator.Sequence(500))
+                .SetBatchExportOptions(new BatchExportOptions
+                {
+                    ScheduledDelay = TimeSpan.FromMilliseconds(200),
+                })
+                .AddOtlpExporter(new HttpExportParameters
+                {
+                    EndPoint = endPoint,
+                    BufferSize = 1024,
+                    ResizeFrame = resizeFrame,
+                })
+                .Build(nameof(HttpExportWithHighStressLoad));
+
+            // Act
+            for (var i = 0; i < 500; i++)
+            {
+                using var activity = source.Start();
+                activity?.SetAttribute("http.url", "https://example.com/some/path");
+            }
+
+            // Assert
+            Task.Delay(1500).Wait();
+            // - Check activity export in batch.
+            return Verify(server.Cache.GetValues(), Settings);
+        }
+        finally
+        {
             server.Dispose();
         }
     }
