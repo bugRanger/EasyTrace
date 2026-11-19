@@ -6,9 +6,12 @@ public class HttpExportParameters
 
     public int BufferSize { get; init; } = 1024;
 
+    public int ResizeFrame { get; init; } = 1024;
+
     public void Validate()
     {
         ArgumentNullException.ThrowIfNull(EndPoint);
         ArgumentOutOfRangeException.ThrowIfLessThan(BufferSize, 1024);
+        ArgumentOutOfRangeException.ThrowIfLessThan(ResizeFrame, 0);
     }
 }

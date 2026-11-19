@@ -10,13 +10,15 @@ public class ProtobufStream(int capacity)
     private const int ReserveSizeForLength = 4;
     private static readonly Encoding Utf8Encoding = Encoding.UTF8;
 
-    private const uint UInt128 = 0x80;
+    private const ulong UInt128 = 0x80;
     private const int Fixed32Size = 4;
     private const int Fixed64Size = 8;
     private const int MaskBitsLow = 0b_0111_1111;
     private const int MaskBitHigh = 0b_1000_0000;
 
-    private readonly byte[] _buffer = new byte[capacity];
+    private byte[] _buffer = new byte[capacity];
+
+    public int Capacity => _buffer.Length;
 
     public int Position { get; private set; }
 
@@ -36,6 +38,9 @@ public class ProtobufStream(int capacity)
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset(int offset = 0) => Position = offset;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Resize(int capacity) => Array.Resize(ref _buffer, capacity);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public LengthScope WriteLengthScope() => new(this);
@@ -58,7 +63,7 @@ public class ProtobufStream(int capacity)
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteTag(int fieldNumber, ProtobufWireType type) =>
-        WriteVarInt32(GetTagValue(fieldNumber, type));
+        WriteVarInt(GetTagValue(fieldNumber, type));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteEnumWithTag(int fieldNumber, int value)
@@ -68,10 +73,10 @@ public class ProtobufStream(int capacity)
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WriteVar32WithTag(int fieldNumber, uint value)
+    public void WriteVarIntWithTag(int fieldNumber, ulong value)
     {
         WriteTag(fieldNumber, ProtobufWireType.VarInt);
-        WriteVarInt32(value);
+        WriteVarInt(value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -118,6 +123,33 @@ public class ProtobufStream(int capacity)
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WriteKeyValueTag(ReadOnlySpan<char> key, bool value)
+    {
+        WriteStringWithTag(ProtobufFieldNumber.Key, key);
+        WriteTag(ProtobufFieldNumber.Value, ProtobufWireType.Len);
+        WriteInt(2);
+        WriteBoolWithTag(ProtobufFieldNumber.AnyValueAsBool, value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WriteKeyValueTag(ReadOnlySpan<char> key, long value)
+    {
+        WriteStringWithTag(ProtobufFieldNumber.Key, key);
+        WriteTag(ProtobufFieldNumber.Value, ProtobufWireType.Len);
+        WriteInt(ComputeVarInt64Size((ulong)value) + 1);
+        WriteVarIntWithTag(ProtobufFieldNumber.AnyValueAsInt, (ulong)value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WriteKeyValueTag(ReadOnlySpan<char> key, double value)
+    {
+        WriteStringWithTag(ProtobufFieldNumber.Key, key);
+        WriteTag(ProtobufFieldNumber.Value, ProtobufWireType.Len);
+        WriteInt(9); // 8 + TagSize
+        WriteFixed64WithTag(ProtobufFieldNumber.AnyValueAsDouble, (ulong)BitConverter.DoubleToInt64Bits(value));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void WriteStringWithTag(int fieldNumber, ReadOnlySpan<char> value)
     {
         var numberOfUtf8CharsInString = GetNumberOfUtf8CharsInString(value);
@@ -125,7 +157,14 @@ public class ProtobufStream(int capacity)
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void WriteVarInt32(uint value)
+    private void WriteBoolWithTag(int fieldNumber, bool value)
+    {
+        WriteTag(fieldNumber, ProtobufWireType.VarInt);
+        _buffer[Position++] = value ? (byte)1 : (byte)0;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void WriteVarInt(ulong value)
     {
         while (value >= UInt128)
         {
@@ -137,7 +176,7 @@ public class ProtobufStream(int capacity)
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void WriteInt(int length) => WriteVarInt32((uint)length);
+    private void WriteInt(int length) => WriteVarInt((uint)length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteFixed32BigEndianFormat(int position, uint value)

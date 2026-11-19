@@ -27,7 +27,7 @@ public sealed class TraceAttributeList(int sizeLimit, int nameCapacity, int valu
         destination.Dropped = Dropped;
         foreach (var attribute in AsSpan())
         {
-            destination.Add(attribute.Name, attribute.Value);
+            destination.Add(attribute.Name, attribute.Value.AsRef());
         }
     }
 

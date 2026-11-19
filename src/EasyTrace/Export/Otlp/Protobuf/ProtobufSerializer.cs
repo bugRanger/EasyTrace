@@ -11,10 +11,12 @@ public class ProtobufSerializer
     private readonly int _traceLengthPosition;
     private readonly int _spansLengthPosition;
     private readonly int _messageWritePosition;
+    private readonly int _resizeFrame;
 
-    public ProtobufSerializer(int capacity, TraceActivitySource activitySource)
+    public ProtobufSerializer(int capacity, int resizeFrame, TraceActivitySource activitySource)
         : this(new ProtobufStream(capacity), activitySource)
     {
+        _resizeFrame = resizeFrame;
     }
 
     public ProtobufSerializer(ProtobufStream stream, TraceActivitySource activitySource)
@@ -29,7 +31,11 @@ public class ProtobufSerializer
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Write(scoped in TraceActivityRef activityRef) => WriteActivity(Stream, activityRef);
+    public void Write(scoped in TraceActivityRef activityRef)
+    {
+        Resize(CalculateSize(activityRef));
+        WriteActivity(Stream, activityRef);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsEmpty() => _messageWritePosition == Stream.Position;
@@ -42,6 +48,15 @@ public class ProtobufSerializer
         var bytes = Stream.AsSpan();
         Stream.Reset(_messageWritePosition);
         return bytes;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void Resize(int size)
+    {
+        if (Stream.Capacity - Stream.Position < size)
+        {
+            Stream.Resize(Stream.Position + size);
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -130,7 +145,7 @@ public class ProtobufSerializer
 
         if (activity.Attributes.Dropped > 0)
         {
-            stream.WriteVar32WithTag(ProtobufFieldNumber.DroppedAttributesCount, activity.Attributes.Dropped);
+            stream.WriteVarIntWithTag(ProtobufFieldNumber.DroppedAttributesCount, activity.Attributes.Dropped);
         }
     }
 
@@ -139,7 +154,27 @@ public class ProtobufSerializer
     {
         stream.WriteTag(ProtobufFieldNumber.Attributes, ProtobufWireType.Len);
         using var sourceLengthScope = stream.WriteLengthScope();
-        stream.WriteKeyValueTag(attribute.Name.Span, attribute.Value.Span);
+        switch (attribute.Value.Kind)
+        {
+            case TraceAttributeKind.String:
+                stream.WriteKeyValueTag(attribute.Name, attribute.Value.AsChars().Span);
+                break;
+
+            case TraceAttributeKind.Double:
+                stream.WriteKeyValueTag(attribute.Name, attribute.Value.AsDouble());
+                break;
+
+            case TraceAttributeKind.Long:
+                stream.WriteKeyValueTag(attribute.Name, attribute.Value.AsLong());
+                break;
+
+            case TraceAttributeKind.Boolean:
+                stream.WriteKeyValueTag(attribute.Name, attribute.Value.AsBool());
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -149,5 +184,12 @@ public class ProtobufSerializer
         const long unixEpochTicks = 621355968000000000;
 
         return (ulong)(dateTime.Ticks - unixEpochTicks) * nanosecondsPerTicks;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int CalculateSize(in TraceActivityRef activityRef)
+    {
+        var spanSize = ProtobufCalculator.CalculateSpanSize(activityRef);
+        return Math.Max(spanSize, _resizeFrame);
     }
 }
