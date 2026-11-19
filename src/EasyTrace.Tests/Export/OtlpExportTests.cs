@@ -1,11 +1,8 @@
-﻿using System.Collections.Concurrent;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
+﻿using System.Net;
 using EasyTrace.Export.Batch;
 using EasyTrace.Export.Otlp.Http;
+using EasyTrace.Tests.Export.TestData;
 using EasyTrace.Tests.TestData;
-using NetCoreServer;
 
 namespace EasyTrace.Tests.Export;
 
@@ -25,13 +22,7 @@ public class OtlpExportTests
         var endPoint = new Uri("http://127.0.0.1:4318");
 
         // Start local HTTP-server.
-        var cache = new TestRequestCache();
-        var server = new TestHttpServer(IPAddress.Any, endPoint.Port, cache);
-        Assert.True(server.Start());
-        while (!server.IsStarted)
-        {
-            Thread.Yield();
-        }
+        var server = new TestHttpServerRunner(IPAddress.Any, endPoint.Port);
 
         try
         {
@@ -84,16 +75,12 @@ public class OtlpExportTests
             // Wait sending.
             Task.Delay(500).Wait();
             // Check activity export in batch.
-            return Verify(cache.GetValues(), Settings);
+            return Verify(server.Cache.GetValues(), Settings);
         }
         finally
         {
             // Stop HTTP-server.
-            Assert.True(server.Stop());
-            while (server.IsStarted)
-            {
-                Thread.Yield();
-            }
+            server.Dispose();
         }
     }
 
@@ -103,13 +90,7 @@ public class OtlpExportTests
         var endPoint = new Uri("http://127.0.0.1:4318");
 
         // Start local HTTP-server.
-        var cache = new TestRequestCache();
-        var server = new TestHttpServer(IPAddress.Any, endPoint.Port, cache);
-        Assert.True(server.Start());
-        while (!server.IsStarted)
-        {
-            Thread.Yield();
-        }
+        var server = new TestHttpServerRunner(IPAddress.Any, endPoint.Port);
 
         try
         {
@@ -158,88 +139,12 @@ public class OtlpExportTests
             // Wait sending.
             Task.Delay(500).Wait();
             // Check activity export in batch.
-            return Verify(cache.GetValues(), Settings);
+            return Verify(server.Cache.GetValues(), Settings);
         }
         finally
         {
             // Stop HTTP-server.
-            Assert.True(server.Stop());
-            while (server.IsStarted)
-            {
-                Thread.Yield();
-            }
+            server.Dispose();
         }
-    }
-}
-
-public class TestHttpSession(HttpServer server, TestRequestCache cache) : HttpSession(server)
-{
-    protected override void OnReceivedRequest(HttpRequest request)
-    {
-        if (request.Method == "POST")
-        {
-            var key = request.Url;
-            var value = request.BodyBytes;
-
-            // Decode the key value
-            key = Uri.UnescapeDataString(key);
-
-            cache.Set(key, value);
-            SendResponseAsync(Response.MakeOkResponse());
-        }
-        else
-        {
-            SendResponseAsync(Response.MakeErrorResponse("Unsupported HTTP method: " + request.Method));
-        }
-    }
-
-    protected override void OnReceivedRequestError(HttpRequest request, string error)
-    {
-        Console.WriteLine($"Request error: {error}");
-    }
-
-    protected override void OnError(SocketError error)
-    {
-        Console.WriteLine($"HTTP session caught an error: {error}");
-    }
-}
-
-public class TestHttpServer(IPAddress address, int port, TestRequestCache cache) : HttpServer(address, port)
-{
-    protected override TcpSession CreateSession() => new TestHttpSession(this, cache);
-
-    protected override void OnError(SocketError error) => Console.WriteLine($"HTTP session caught an error: {error}");
-}
-
-public class TestRequestCache
-{
-    private readonly ConcurrentDictionary<string, List<string>> _cache = new();
-
-    public void Set(string key, byte[] value)
-    {
-        var valueStr = Convert.ToHexStringLower(value);
-        if (_cache.TryGetValue(key, out var list))
-        {
-            list.Add(valueStr);
-            return;
-        }
-
-        _cache[key] = [valueStr];
-    }
-
-    public string GetValues()
-    {
-        var result = new StringBuilder();
-        result.Append("[\n");
-        foreach (var item in _cache)
-        {
-            result.Append("  {\n");
-            result.AppendFormat($"    \"key\": \"{item.Key}\",\n");
-            result.AppendFormat($"    \"value\": \"{string.Join(", \n", item.Value)}\",\n");
-            result.Append("  },\n");
-        }
-
-        result.Append("]\n");
-        return result.ToString();
     }
 }
