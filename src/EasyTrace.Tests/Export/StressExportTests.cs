@@ -2,6 +2,7 @@
 using EasyTrace.Export.Batch;
 using EasyTrace.Export.Otlp.Http;
 using EasyTrace.Tests.Export.TestData;
+using EasyTrace.Tests.TestData;
 
 namespace EasyTrace.Tests.Export;
 
@@ -26,6 +27,8 @@ public class StressExportTests
         {
             // - Make activity source.
             var source = new TraceActivitySourceBuilder()
+                .SetTimeProvider(new MoqTimeProvider())
+                .SetIdentifierGenerator(MoqIdentGenerator.Sequence(500))
                 .SetBatchExportOptions(new BatchExportOptions
                 {
                     ScheduledDelay = TimeSpan.FromMilliseconds(200),
