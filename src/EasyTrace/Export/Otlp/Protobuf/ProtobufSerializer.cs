@@ -143,7 +143,7 @@ public class ProtobufSerializer
 
         if (activity.Attributes.Dropped > 0)
         {
-            stream.WriteVar32WithTag(ProtobufFieldNumber.DroppedAttributesCount, activity.Attributes.Dropped);
+            stream.WriteVarIntWithTag(ProtobufFieldNumber.DroppedAttributesCount, activity.Attributes.Dropped);
         }
     }
 
@@ -152,7 +152,27 @@ public class ProtobufSerializer
     {
         stream.WriteTag(ProtobufFieldNumber.Attributes, ProtobufWireType.Len);
         using var sourceLengthScope = stream.WriteLengthScope();
-        stream.WriteKeyValueTag(attribute.Name.Span, attribute.Value.Span);
+        switch (attribute.Value.Kind)
+        {
+            case TraceAttributeKind.String:
+                stream.WriteKeyValueTag(attribute.Name, attribute.Value.AsChars().Span);
+                break;
+
+            case TraceAttributeKind.Double:
+                stream.WriteKeyValueTag(attribute.Name, attribute.Value.AsDouble());
+                break;
+
+            case TraceAttributeKind.Long:
+                stream.WriteKeyValueTag(attribute.Name, attribute.Value.AsLong());
+                break;
+
+            case TraceAttributeKind.Boolean:
+                stream.WriteKeyValueTag(attribute.Name, attribute.Value.AsBool());
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
