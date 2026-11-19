@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
 using EasyTrace.Activity;
-using EasyTrace.Tests.Export.TestData;
+using EasyTrace.Export.Otlp.Protobuf;
 
 namespace EasyTrace.Tests.Export;
 
@@ -19,9 +19,10 @@ public class ProtobufCalculateTests
         diagnosticActivity.SetEndTime(new DateTime(2020, 1, 2));
         if (addTags)
         {
-            diagnosticActivity.SetTag("tag_string", "string");
-            diagnosticActivity.SetTag("tag_double", 1.123456789);
-            diagnosticActivity.SetTag("tag_long", 123456789ul);
+            diagnosticActivity.SetTag("tag_string", "https://example.com/some/path");
+            diagnosticActivity.SetTag("tag_double", (double)1.123456789);
+            diagnosticActivity.SetTag("tag_long", (long)123456789ul);
+            diagnosticActivity.SetTag("tag_bool", (bool)true);
         }
 
         diagnosticActivity.Stop();
@@ -30,7 +31,7 @@ public class ProtobufCalculateTests
 
         // Act
         var expectedSize = ProtobufCalculator.CalculateSpanSize(diagnosticActivity);
-        var calculateSize = ProtobufCalculator.CalculateSpanSize(traceActivity);
+        var calculateSize = ProtobufCalculator.CalculateSpanSize(new TraceActivityRef(traceActivity));
 
         // Assert
         Assert.That(calculateSize, Is.EqualTo(expectedSize));
@@ -61,6 +62,10 @@ public class ProtobufCalculateTests
             switch (tag.Value)
             {
                 case string value:
+                    traceActivity.Attributes.Add(tag.Key, value);
+                    break;
+
+                case bool value:
                     traceActivity.Attributes.Add(tag.Key, value);
                     break;
 
