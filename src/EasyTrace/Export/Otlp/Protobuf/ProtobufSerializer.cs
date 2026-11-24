@@ -33,6 +33,8 @@ public class ProtobufSerializer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Write(scoped in TraceActivityRef activityRef)
     {
+        // TODO: Избавиться от пересчета и использовать логику:
+        // Если буфера не хватает для записи на любом шаге, то сделать ресайз на окно ресайза.
         Resize(CalculateSize(activityRef));
         WriteActivity(Stream, activityRef);
     }
@@ -189,7 +191,8 @@ public class ProtobufSerializer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int CalculateSize(in TraceActivityRef activityRef)
     {
-        var spanSize = ProtobufCalculator.CalculateSpanSize(activityRef);
+        var span = new ProtobufSpan(activityRef);
+        var spanSize = ProtobufCalculator.Instance.Calculate(ref span);
         return Math.Max(spanSize, _resizeFrame);
     }
 }
