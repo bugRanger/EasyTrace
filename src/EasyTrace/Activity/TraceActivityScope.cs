@@ -1,16 +1,22 @@
-﻿using EasyTrace.Attribute;
+﻿using System.Runtime.CompilerServices;
+using EasyTrace.Attribute;
 
 namespace EasyTrace.Activity;
 
-public readonly struct TraceActivityScope(TraceActivity activity) : IDisposable
+public ref struct TraceActivityScope(TraceActivity? activity) : IDisposable
 {
+    private TraceActivity? _activity = activity;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetAttribute(in TraceAttributeFieldRef name, in TraceAttributeFieldRef field)
     {
-        activity.Attributes.Add(name, field);
+        _activity?.Attributes.Add(name, field);
     }
 
     public void Dispose()
     {
-        activity.Source.Stop(activity);
+        var local = _activity;
+        _activity = null;
+        local?.Source.Stop(local);
     }
 }

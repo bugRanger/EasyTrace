@@ -38,13 +38,13 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
 
     public string? Version { get; } = version?.ToString();
 
-    public TraceActivityScope? Start(
+    public TraceActivityScope Start(
         [CallerMemberName] string operationName = "",
         ActivityKind kind = ActivityKind.Internal)
     {
-        if (BatchExporter is not { IsActive: true } && GroupInterceptor is not { IsActive: true })
+        if (this == Empty || BatchExporter is not { IsActive: true } && GroupInterceptor is not { IsActive: true })
         {
-            return null;
+            return new TraceActivityScope(null);   
         }
 
         var activity = Pool.Rent();
@@ -81,6 +81,11 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
 
     public void Stop(TraceActivity activity)
     {
+        if (this == Empty)
+        {
+            return;
+        }
+
         try
         {
             if (activity.EndTime == DateTime.MinValue)

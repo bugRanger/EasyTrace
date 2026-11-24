@@ -10,5 +10,5 @@ AMD Ryzen 7 5700G with Radeon Graphics 3.80GHz, 1 CPU, 16 logical and 8 physical
 ```
 | Method                      | Mean     | Error   | StdDev  | Ratio        | RatioSD | Gen0   | Socket.Send | Allocated | Alloc Ratio |
 |---------------------------- |---------:|--------:|--------:|-------------:|--------:|-------:|------------:|----------:|------------:|
-| System.Diagnostics.Activity | 655.0 ns | 8.34 ns | 6.96 ns |     baseline |         | 0.1450 |       31568 |    1230 B |             |
-| EasyTrace.Activity          | 285.2 ns | 0.90 ns | 0.70 ns | 2.30x faster |   0.02x |      - |       45900 |         - |          NA |
+| System.Diagnostics.Activity | 636.4 ns | 8.67 ns | 7.68 ns |     baseline |         | 0.1450 |       27736 |    1228 B |             |
+| EasyTrace.Activity          | 311.8 ns | 1.36 ns | 1.27 ns | 2.04x faster |   0.03x |      - |       45670 |         - |          NA |

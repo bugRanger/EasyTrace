@@ -226,12 +226,12 @@ public class ActivityExportTests
         // Act
         {
             using var scope = source.Start("TestName");
-            scope?.SetAttribute("tag_string", AttributeSymbols);
-            scope?.SetAttribute("tag_double", 1.123456789);
-            scope?.SetAttribute("tag_int", 123456789);
+            scope.SetAttribute("tag_string", AttributeSymbols);
+            scope.SetAttribute("tag_double", 1.123456789);
+            scope.SetAttribute("tag_int", 123456789);
             // > dropped: 2
-            scope?.SetAttribute("tag_drop1", "dropped");
-            scope?.SetAttribute("tag_drop2", "dropped");
+            scope.SetAttribute("tag_drop1", "dropped");
+            scope.SetAttribute("tag_drop2", "dropped");
         }
 
         // Assert
@@ -271,29 +271,29 @@ public class ActivityExportTests
         {
             using var parentScope = source.Start("Parent");
             // > A string equal to the established limit
-            parentScope?.SetAttribute("tag_string", AttributeSymbols);
-            parentScope?.SetAttribute("tag_double", 1.123456789);
-            parentScope?.SetAttribute("tag_int", 123456789);
+            parentScope.SetAttribute("tag_string", AttributeSymbols);
+            parentScope.SetAttribute("tag_double", 1.123456789);
+            parentScope.SetAttribute("tag_int", 123456789);
             // > dropped: 1
-            parentScope?.SetAttribute("tag_drop1", "dropped");
+            parentScope.SetAttribute("tag_drop1", "dropped");
             using var childScope1 = source.Start("Child1");
             // > A string is shorter than the limit.
-            childScope1?.SetAttribute("tag_string", $"{AttributeSymbols.AsMemory(0, AttributeSymbols.Length / 2)}");
-            childScope1?.SetAttribute("tag_double", 2.123456789);
-            childScope1?.SetAttribute("tag_int", 213456789);
+            childScope1.SetAttribute("tag_string", $"{AttributeSymbols.AsMemory(0, AttributeSymbols.Length / 2)}");
+            childScope1.SetAttribute("tag_double", 2.123456789);
+            childScope1.SetAttribute("tag_int", 213456789);
             // > dropped: 2
-            childScope1?.SetAttribute("tag_drop1", "dropped");
-            childScope1?.SetAttribute("tag_drop2", "dropped");
+            childScope1.SetAttribute("tag_drop1", "dropped");
+            childScope1.SetAttribute("tag_drop2", "dropped");
             using var childScope2 = source.Start("Child2");
             // > A string exceeds the established limit
-            childScope2?.SetAttribute("tag_string",
+            childScope2.SetAttribute("tag_string",
                 $"{AttributeSymbols.AsMemory(AttributeSymbols.Length / 2)}{AttributeSymbols}");
-            childScope2?.SetAttribute("tag_double", 3.123456789);
-            childScope2?.SetAttribute("tag_int", 312456789);
+            childScope2.SetAttribute("tag_double", 3.123456789);
+            childScope2.SetAttribute("tag_int", 312456789);
             // > dropped: 3
-            childScope2?.SetAttribute("tag_drop1", "dropped");
-            childScope2?.SetAttribute("tag_drop2", "dropped");
-            childScope2?.SetAttribute("tag_drop2", "dropped");
+            childScope2.SetAttribute("tag_drop1", "dropped");
+            childScope2.SetAttribute("tag_drop2", "dropped");
+            childScope2.SetAttribute("tag_drop2", "dropped");
         }
 
         // Assert
@@ -361,6 +361,38 @@ public class ActivityExportTests
         return Verify(inMemoryExporter.Batches, Settings);
     }
 
+    
+    [Test]
+    public Task ReuseActivityScope()
+    {
+        // Arrange
+        var inMemoryExporter = new InMemoryExport();
+        var source = new TraceActivitySourceBuilder()
+            .SetIdentifierGenerator(MoqIdentGenerator.Sequence(1))
+            .SetTimeProvider(new MoqTimeProvider())
+            .SetBatchExportOptions(new BatchExportOptions
+            {
+                MaxExportSize = 1,
+            })
+            .AddExporter(inMemoryExporter)
+            .Build(nameof(ActivityExportTests));
+
+        var scope = source.Start();
+        
+        // Act
+        {
+            // @formatter:off
+            using (scope) { }
+            using (scope) { }
+            // @formatter:on
+        }
+        
+        // Assert
+        // - wait for batch processing from another thread to complete.
+        Task.Delay(500).Wait();
+        return Verify(inMemoryExporter.Batches, Settings);
+    }
+    
     private const string AttributeSymbols =
         " !\"#$%&'()*+,-./0123456789:;<=>?@" +
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~" +

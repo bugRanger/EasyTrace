@@ -31,13 +31,8 @@ public class TestAttributeProvider
             .ToArray();
     }
 
-    public void SetAttributes(string attributeType, in TraceActivityScope? activity)
+    public void SetAttributes(string attributeType, in TraceActivityScope activity)
     {
-        if (!activity.HasValue)
-        {
-            return;
-        }
-
         switch (attributeType)
         {
             case None:
@@ -46,21 +41,21 @@ public class TestAttributeProvider
             case Int32:
                 foreach (var (name, value) in _attributeInt)
                 {
-                    activity?.SetAttribute(name, value);
+                    activity.SetAttribute(name, value);
                 }
 
                 break;
             case Double:
                 foreach (var (name, value) in _attributeDouble)
                 {
-                    activity?.SetAttribute(name, value);
+                    activity.SetAttribute(name, value);
                 }
 
                 break;
             case String:
                 foreach (var (name, value) in _attributeString)
                 {
-                    activity?.SetAttribute(name, value);
+                    activity.SetAttribute(name, value);
                 }
 
                 break;

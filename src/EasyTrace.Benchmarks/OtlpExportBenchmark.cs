@@ -102,8 +102,8 @@ public class OtlpExportBenchmark
         _traceActivitySource = new TraceActivitySourceBuilder()
             .SetBatchExportOptions(new BatchExportOptions
             {
-                MaxExportSize = ExportBatchSize,
                 MaxQueueSize = ExportBatchSize * 2,
+                MaxExportSize = ExportBatchSize,
             })
             .AddInterceptor(_traceActivityInterceptor)
             .AddOtlpExporter(new HttpExportParameters())
