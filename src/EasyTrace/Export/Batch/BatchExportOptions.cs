@@ -36,9 +36,8 @@ public sealed record BatchExportOptions
     public void Validate()
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(MaxExportSize, 1u);
-        ArgumentOutOfRangeException.ThrowIfLessThan(MaxQueueSize, DefaultQueueSize);
+        ArgumentOutOfRangeException.ThrowIfLessThan(MaxQueueSize, MaxExportSize * 2);
         ArgumentOutOfRangeException.ThrowIfLessThan(ScheduledDelay, TimeSpan.Zero);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(ShutdownDelay, TimeSpan.Zero);
-        ArgumentOutOfRangeException.ThrowIfLessThan(MaxQueueSize, MaxExportSize * 2);
     }
 }
