@@ -179,7 +179,7 @@ public class OtlpExportTests
             for (var i = 0; i < 500; i++)
             {
                 using var activity = source.Start();
-                activity?.SetAttribute("http.url", "https://example.com/some/path");
+                activity.SetAttribute("http.url", "https://example.com/some/path");
             }
 
             // Assert
