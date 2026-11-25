@@ -400,6 +400,7 @@ public class ActivityExportTests
         var source = new TraceActivitySourceBuilder()
             .SetIdentifierGenerator(MoqIdentGenerator.Sequence(2))
             .SetTimeProvider(new MoqTimeProvider())
+            .SetAsyncScope()
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = 2,

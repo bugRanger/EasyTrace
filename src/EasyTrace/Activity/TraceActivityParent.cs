@@ -1,6 +1,6 @@
 ﻿namespace EasyTrace.Activity;
 
-public class TraceActivityParent
+public class TraceActivityParent : ITraceActivityParent
 {
     private readonly ThreadLocal<TraceActivity?> _parentActivityByThreadLocal = new();
     

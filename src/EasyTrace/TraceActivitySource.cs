@@ -15,7 +15,7 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
 
     internal static readonly TraceActivitySource Empty = new(nameof(Empty));
 
-    internal TraceActivityParent Parent { get; init; } = new();
+    internal ITraceActivityParent Parent { get; init; } = new TraceActivityParent();
     internal TraceActivityFactory Factory { get; init; } = new(new TraceActivityLimits());
     internal ITraceTimeProvider TimeProvider { get; init; } = new TraceTimeProvider();
     internal ITraceIdentifierGenerator IdentifierGenerator { get; init; } = new Xoshiro256PlusPlus();

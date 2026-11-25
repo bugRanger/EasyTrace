@@ -17,7 +17,7 @@ public class TraceActivitySourceBuilder
     private BatchExportOptions? _batchExportOptions;
     private BatchExporter? _batchExporter;
     private Dictionary<string, string>? _resources;
-    private TraceActivityParent? _parent;
+    private ITraceActivityParent? _parent;
     private TraceActivityFactory? _factory;
     private ITraceTimeProvider? _timeProvider;
     private ITraceIdentifierGenerator? _identifierGenerator;
@@ -51,6 +51,13 @@ public class TraceActivitySourceBuilder
         return this;
     }
 
+    public TraceActivitySourceBuilder SetAsyncScope()
+    {
+        ThrowIfNotNull(_parent);
+        _parent ??= new TraceActivityParentAsync();
+        return this;
+    }
+    
     public TraceActivitySourceBuilder AddOtlpExporter(HttpExportParameters parameters)
     {
         ThrowIfNotNull(_batchExporter, "No changes are permitted after the first build");
