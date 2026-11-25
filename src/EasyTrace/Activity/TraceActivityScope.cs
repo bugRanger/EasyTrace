@@ -3,7 +3,7 @@ using EasyTrace.Attribute;
 
 namespace EasyTrace.Activity;
 
-public ref struct TraceActivityScope(TraceActivity? activity) : IDisposable
+public struct TraceActivityScope(TraceActivity? activity) : IDisposable
 {
     private TraceActivity? _activity = activity;
 
@@ -15,8 +15,7 @@ public ref struct TraceActivityScope(TraceActivity? activity) : IDisposable
 
     public void Dispose()
     {
-        var local = _activity;
-        _activity = null;
+        var local = Interlocked.Exchange(ref _activity, null);
         local?.Source.Stop(local);
     }
 }
