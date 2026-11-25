@@ -43,7 +43,7 @@ public class OtlpExportTests
                 .AddOtlpExporter(new HttpExportParameters
                 {
                     EndPoint = endPoint,
-                    BufferSize = 1024 * 4,
+                    BufferCapacity = 1024 * 4,
                 })
                 .Build(nameof(ActivityExportTests));
 
@@ -111,7 +111,7 @@ public class OtlpExportTests
                 .AddOtlpExporter(new HttpExportParameters
                 {
                     EndPoint = endPoint,
-                    BufferSize = 1024 * 4,
+                    BufferCapacity = 1024 * 4,
                 });
 
             // - Make activity source.
@@ -149,9 +149,7 @@ public class OtlpExportTests
     }
     
     [Test]
-    [TestCase(0)]
-    [TestCase(1024)]
-    public Task HttpExportWithHighStressLoad(int resizeFrame)
+    public Task HttpExportWithHighStressLoad()
     {
         // Arrange
         var endPoint = new Uri("http://127.0.0.1:4318");
@@ -170,8 +168,7 @@ public class OtlpExportTests
                 .AddOtlpExporter(new HttpExportParameters
                 {
                     EndPoint = endPoint,
-                    BufferSize = 1024,
-                    ResizeFrame = resizeFrame,
+                    BufferCapacity = 1024,
                 })
                 .Build(nameof(HttpExportWithHighStressLoad));
 

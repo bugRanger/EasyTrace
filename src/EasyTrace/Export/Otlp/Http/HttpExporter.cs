@@ -42,11 +42,7 @@ public class HttpExporter : FastHttpClient, ITraceActivityExporter
     {
         if (!_serializerBySource.TryGetValue(activityRef.Source, out var serializer))
         {
-            serializer = new ProtobufSerializer(
-                _parameters.BufferSize,
-                _parameters.ResizeFrame,
-                activityRef.Source);
-
+            serializer = new ProtobufSerializer(_parameters.BufferCapacity, activityRef.Source);
             _serializerBySource[activityRef.Source] = serializer;
         }
 

@@ -11,12 +11,10 @@ public class ProtobufSerializer
     private readonly int _traceLengthPosition;
     private readonly int _spansLengthPosition;
     private readonly int _messageWritePosition;
-    private readonly int _resizeFrame;
 
-    public ProtobufSerializer(int capacity, int resizeFrame, TraceActivitySource activitySource)
+    public ProtobufSerializer(int capacity, TraceActivitySource activitySource)
         : this(new ProtobufStream(capacity), activitySource)
     {
-        _resizeFrame = resizeFrame;
     }
 
     public ProtobufSerializer(ProtobufStream stream, TraceActivitySource activitySource)
@@ -33,15 +31,12 @@ public class ProtobufSerializer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Write(scoped in TraceActivityRef activityRef)
     {
-        // TODO: Избавиться от пересчета и использовать логику:
-        // Если буфера не хватает для записи на любом шаге, то сделать ресайз на окно ресайза.
-        Resize(CalculateSize(activityRef));
         WriteActivity(Stream, activityRef);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsEmpty() => _messageWritePosition == Stream.Position;
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual ReadOnlySpan<byte> Flush()
     {
@@ -50,15 +45,6 @@ public class ProtobufSerializer
         var bytes = Stream.AsSpan();
         Stream.Reset(_messageWritePosition);
         return bytes;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void Resize(int size)
-    {
-        if (Stream.Capacity - Stream.Position < size)
-        {
-            Stream.Resize(Stream.Position + size);
-        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -186,13 +172,5 @@ public class ProtobufSerializer
         const long unixEpochTicks = 621355968000000000;
 
         return (ulong)(dateTime.Ticks - unixEpochTicks) * nanosecondsPerTicks;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int CalculateSize(in TraceActivityRef activityRef)
-    {
-        var span = new ProtobufSpan(activityRef);
-        var spanSize = ProtobufCalculator.Instance.Calculate(ref span);
-        return Math.Max(spanSize, _resizeFrame);
     }
 }

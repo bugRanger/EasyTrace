@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -31,6 +32,7 @@ public class ProtobufStream(int capacity)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Reserve(int length)
     {
+        Resize(length);
         var position = Position;
         Position += length;
         return position;
@@ -40,7 +42,17 @@ public class ProtobufStream(int capacity)
     public void Reset(int offset = 0) => Position = offset;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Resize(int capacity) => Array.Resize(ref _buffer, capacity);
+    public void Resize(int size)
+    {
+        if (Capacity - Position > size)
+        {
+            return;
+        }
+
+        var bufferSize = BitOperations.RoundUpToPowerOf2((uint)(Capacity + size));
+        bufferSize = Math.Min(bufferSize, (uint)Array.MaxLength);
+        Array.Resize(ref _buffer, (int)bufferSize);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public LengthScope WriteLengthScope() => new(this);
@@ -52,16 +64,6 @@ public class ProtobufStream(int capacity)
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WriteLength(int position, int length)
-    {
-        var slice = _buffer.AsSpan(position, 4);
-        slice[0] = (byte)((length & MaskBitsLow) | MaskBitHigh);
-        slice[1] = (byte)(((length >> 7) & MaskBitsLow) | MaskBitHigh);
-        slice[2] = (byte)(((length >> 14) & MaskBitsLow) | MaskBitHigh);
-        slice[3] = (byte)((length >> 21) & MaskBitsLow);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteTag(int fieldNumber, ProtobufWireType type) =>
         WriteVarInt(GetTagValue(fieldNumber, type));
 
@@ -69,7 +71,7 @@ public class ProtobufStream(int capacity)
     public void WriteEnumWithTag(int fieldNumber, int value)
     {
         WriteTag(fieldNumber, ProtobufWireType.VarInt);
-        _buffer[Position++] = (byte)value;
+        WriteByte((byte)value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -98,8 +100,7 @@ public class ProtobufStream(int capacity)
     {
         WriteTag(fieldNumber, ProtobufWireType.Len);
         WriteInt(value.Length);
-        value.CopyTo(_buffer.AsSpan(Position));
-        Position += value.Length;
+        WriteBytes(value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -157,15 +158,56 @@ public class ProtobufStream(int capacity)
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void WriteStringWithTag(
+        int fieldNumber,
+        int numberOfUtf8CharsInString,
+        ReadOnlySpan<char> value)
+    {
+        WriteTag(fieldNumber, ProtobufWireType.Len);
+        WriteInt(numberOfUtf8CharsInString);
+        WriteChars(numberOfUtf8CharsInString, value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void WriteBoolWithTag(int fieldNumber, bool value)
     {
         WriteTag(fieldNumber, ProtobufWireType.VarInt);
-        _buffer[Position++] = value ? (byte)1 : (byte)0;
+        WriteByte(value ? (byte)1 : (byte)0);
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WriteLength(int position, int length)
+    {
+        Resize(Fixed32Size);
+        var slice = _buffer.AsSpan(position, Fixed32Size);
+        slice[0] = (byte)((length & MaskBitsLow) | MaskBitHigh);
+        slice[1] = (byte)(((length >> 7) & MaskBitsLow) | MaskBitHigh);
+        slice[2] = (byte)(((length >> 14) & MaskBitsLow) | MaskBitHigh);
+        slice[3] = (byte)((length >> 21) & MaskBitsLow);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void WriteByte(byte value)
+    {
+        Resize(1);
+        _buffer[Position++] = value;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void WriteBytes(ReadOnlySpan<byte> value)
+    {
+        Resize(value.Length);
+        value.CopyTo(_buffer.AsSpan(Position));
+        Position += value.Length;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void WriteInt(int value) => WriteVarInt((uint)value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void WriteVarInt(ulong value)
     {
+        Resize(Fixed64Size);
         while (value >= UInt128)
         {
             _buffer[Position++] = (byte)(MaskBitHigh | (value & MaskBitsLow));
@@ -176,11 +218,9 @@ public class ProtobufStream(int capacity)
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void WriteInt(int length) => WriteVarInt((uint)length);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteFixed32BigEndianFormat(int position, uint value)
     {
+        Resize(Fixed32Size);
         Span<byte> span = new(_buffer, position, Fixed32Size);
         BinaryPrimitives.WriteUInt32BigEndian(span, value);
     }
@@ -188,6 +228,7 @@ public class ProtobufStream(int capacity)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void WriteFixed32LittleEndianFormat(uint value)
     {
+        Resize(Fixed32Size);
         Span<byte> span = new(_buffer, Position, Fixed32Size);
         BinaryPrimitives.WriteUInt32LittleEndian(span, value);
         Position += Fixed32Size;
@@ -196,20 +237,16 @@ public class ProtobufStream(int capacity)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void WriteFixed64LittleEndianFormat(ulong value)
     {
+        Resize(Fixed64Size);
         Span<byte> span = new(_buffer, Position, Fixed64Size);
         BinaryPrimitives.WriteUInt64LittleEndian(span, value);
         Position += Fixed64Size;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void WriteStringWithTag(
-        int fieldNumber,
-        int numberOfUtf8CharsInString,
-        ReadOnlySpan<char> value)
+    private void WriteChars(int numberOfUtf8CharsInString, ReadOnlySpan<char> value)
     {
-        WriteTag(fieldNumber, ProtobufWireType.Len);
-        WriteInt(numberOfUtf8CharsInString);
-
+        Resize(Encoding.UTF8.GetMaxByteCount(value.Length));
         var bytesWritten = Utf8Encoding.GetBytes(value, _buffer.AsSpan(Position));
         Debug.Assert(bytesWritten == numberOfUtf8CharsInString, "bytesWritten did not match numberOfUtf8CharsInString");
         Position += bytesWritten;
