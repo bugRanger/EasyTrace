@@ -1,11 +1,8 @@
-﻿using System.Collections.Concurrent;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
+﻿using System.Net;
 using EasyTrace.Export.Batch;
 using EasyTrace.Export.Otlp.Http;
+using EasyTrace.Tests.Export.TestData;
 using EasyTrace.Tests.TestData;
-using NetCoreServer;
 
 namespace EasyTrace.Tests.Export;
 
@@ -22,20 +19,13 @@ public class OtlpExportTests
     [Test]
     public Task HttpExportWithOneSource()
     {
+        // Arrange
         var endPoint = new Uri("http://127.0.0.1:4318");
-
-        // Start local HTTP-server.
-        var cache = new TestRequestCache();
-        var server = new TestHttpServer(IPAddress.Any, endPoint.Port, cache);
-        Assert.True(server.Start());
-        while (!server.IsStarted)
-        {
-            Thread.Yield();
-        }
+        var server = new TestHttpServerRunner(IPAddress.Any, endPoint.Port);
 
         try
         {
-            // Make activity source.
+            // - Make activity source.
             var source = new TraceActivitySourceBuilder()
                 .SetTimeProvider(new MoqTimeProvider())
                 .SetIdentifierGenerator(MoqIdentGenerator.Sequence(9))
@@ -53,11 +43,12 @@ public class OtlpExportTests
                 .AddOtlpExporter(new HttpExportParameters
                 {
                     EndPoint = endPoint,
-                    BufferSize = 1024 * 4,
+                    BufferCapacity = 1024 * 4,
                 })
                 .Build(nameof(ActivityExportTests));
 
-            // Make activity for batch export.
+            // Act
+            // - Make activity for batch export.
             {
                 {
                     using (var _ = source.Start()) {}
@@ -81,39 +72,28 @@ public class OtlpExportTests
                 Task.Delay(100).Wait();
             }
 
-            // Wait sending.
+            // Assert
+            // - Wait sending.
             Task.Delay(500).Wait();
-            // Check activity export in batch.
-            return Verify(cache.GetValues(), Settings);
+            // - Check activity export in batch.
+            return Verify(server.Cache.GetValues(), Settings);
         }
         finally
         {
-            // Stop HTTP-server.
-            Assert.True(server.Stop());
-            while (server.IsStarted)
-            {
-                Thread.Yield();
-            }
+            server.Dispose();
         }
     }
 
     [Test]
     public Task HttpExportWithTwoSource()
     {
+        // Arrange
         var endPoint = new Uri("http://127.0.0.1:4318");
-
-        // Start local HTTP-server.
-        var cache = new TestRequestCache();
-        var server = new TestHttpServer(IPAddress.Any, endPoint.Port, cache);
-        Assert.True(server.Start());
-        while (!server.IsStarted)
-        {
-            Thread.Yield();
-        }
+        var server = new TestHttpServerRunner(IPAddress.Any, endPoint.Port);
 
         try
         {
-            // Make builder.
+            // - Make builder.
             var builder = new TraceActivitySourceBuilder()
                 .SetTimeProvider(new MoqTimeProvider())
                 .SetIdentifierGenerator(MoqIdentGenerator.Sequence(6))
@@ -131,14 +111,15 @@ public class OtlpExportTests
                 .AddOtlpExporter(new HttpExportParameters
                 {
                     EndPoint = endPoint,
-                    BufferSize = 1024 * 4,
+                    BufferCapacity = 1024 * 4,
                 });
 
-            // Make activity source.
+            // - Make activity source.
             var source1 = builder.Build("Source1");
             var source2 = builder.Build("Source2");
 
-            // Make activity for batch export.
+            // Act
+            // - Make activity for batch export.
             {
                 {
                     using var _ = source1.Start();
@@ -155,91 +136,57 @@ public class OtlpExportTests
                 Task.Delay(100).Wait();
             }
 
-            // Wait sending.
+            // Assert
+            // - Wait sending.
             Task.Delay(500).Wait();
-            // Check activity export in batch.
-            return Verify(cache.GetValues(), Settings);
+            // - Check activity export in batch.
+            return Verify(server.Cache.GetValues(), Settings);
         }
         finally
         {
-            // Stop HTTP-server.
-            Assert.True(server.Stop());
-            while (server.IsStarted)
+            server.Dispose();
+        }
+    }
+    
+    [Test]
+    public Task HttpExportWithHighStressLoad()
+    {
+        // Arrange
+        var endPoint = new Uri("http://127.0.0.1:4318");
+        var server = new TestHttpServerRunner(IPAddress.Any, endPoint.Port);
+
+        try
+        {
+            // - Make activity source.
+            var source = new TraceActivitySourceBuilder()
+                .SetTimeProvider(new MoqTimeProvider())
+                .SetIdentifierGenerator(MoqIdentGenerator.Sequence(500))
+                .SetBatchExportOptions(new BatchExportOptions
+                {
+                    ScheduledDelay = TimeSpan.FromMilliseconds(200),
+                })
+                .AddOtlpExporter(new HttpExportParameters
+                {
+                    EndPoint = endPoint,
+                    BufferCapacity = 1024,
+                })
+                .Build(nameof(HttpExportWithHighStressLoad));
+
+            // Act
+            for (var i = 0; i < 500; i++)
             {
-                Thread.Yield();
+                using var activity = source.Start();
+                activity.SetAttribute("http.url", "https://example.com/some/path");
             }
-        }
-    }
-}
 
-public class TestHttpSession(HttpServer server, TestRequestCache cache) : HttpSession(server)
-{
-    protected override void OnReceivedRequest(HttpRequest request)
-    {
-        if (request.Method == "POST")
+            // Assert
+            Task.Delay(1500).Wait();
+            // - Check activity export in batch.
+            return Verify(server.Cache.GetValues(), Settings);
+        }
+        finally
         {
-            var key = request.Url;
-            var value = request.BodyBytes;
-
-            // Decode the key value
-            key = Uri.UnescapeDataString(key);
-
-            cache.Set(key, value);
-            SendResponseAsync(Response.MakeOkResponse());
+            server.Dispose();
         }
-        else
-        {
-            SendResponseAsync(Response.MakeErrorResponse("Unsupported HTTP method: " + request.Method));
-        }
-    }
-
-    protected override void OnReceivedRequestError(HttpRequest request, string error)
-    {
-        Console.WriteLine($"Request error: {error}");
-    }
-
-    protected override void OnError(SocketError error)
-    {
-        Console.WriteLine($"HTTP session caught an error: {error}");
-    }
-}
-
-public class TestHttpServer(IPAddress address, int port, TestRequestCache cache) : HttpServer(address, port)
-{
-    protected override TcpSession CreateSession() => new TestHttpSession(this, cache);
-
-    protected override void OnError(SocketError error) => Console.WriteLine($"HTTP session caught an error: {error}");
-}
-
-public class TestRequestCache
-{
-    private readonly ConcurrentDictionary<string, List<string>> _cache = new();
-
-    public void Set(string key, byte[] value)
-    {
-        var valueStr = Convert.ToHexStringLower(value);
-        if (_cache.TryGetValue(key, out var list))
-        {
-            list.Add(valueStr);
-            return;
-        }
-
-        _cache[key] = [valueStr];
-    }
-
-    public string GetValues()
-    {
-        var result = new StringBuilder();
-        result.Append("[\n");
-        foreach (var item in _cache)
-        {
-            result.Append("  {\n");
-            result.AppendFormat($"    \"key\": \"{item.Key}\",\n");
-            result.AppendFormat($"    \"value\": \"{string.Join(", \n", item.Value)}\",\n");
-            result.Append("  },\n");
-        }
-
-        result.Append("]\n");
-        return result.ToString();
     }
 }
