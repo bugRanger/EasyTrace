@@ -416,6 +416,39 @@ public class ActivityExportTests
             using var __ = source.Start("child");
             await Task.Yield();
             // @formatter:on
+
+        }
+
+        // Assert
+        // - wait for batch processing from another thread to complete.
+        Task.Delay(500).Wait();
+        await Verify(inMemoryExporter.Batches, Settings);
+    }
+
+    [Test]
+    public async Task AsyncActivityScopeAsParents()
+    {
+        // Arrange
+        var inMemoryExporter = new InMemoryExport();
+        var source = new TraceActivitySourceBuilder()
+            .SetIdentifierGenerator(MoqIdentGenerator.Sequence(2))
+            .SetTimeProvider(new MoqTimeProvider())
+            .SetAsyncScope()
+            .SetBatchExportOptions(new BatchExportOptions
+            {
+                MaxExportSize = 2,
+            })
+            .AddExporter(inMemoryExporter)
+            .Build(nameof(ActivityExportTests));
+
+        // Act
+        {
+            // @formatter:off
+            using (var _ = source.Start("parent1")) { }
+            await Task.Yield();
+            using (var _ = source.Start("parent2")) { }
+            await Task.Yield();
+            // @formatter:on
         }
 
         // Assert
