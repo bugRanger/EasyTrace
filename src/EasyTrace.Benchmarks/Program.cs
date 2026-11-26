@@ -28,7 +28,7 @@ namespace EasyTrace.Benchmarks
         public static ManualConfig Shared =>
             ManualConfig.Create(DefaultConfig.Instance)
                 .AddValidator(ExecutionValidator.FailOnError)
-                .AddValidator(ReturnValueValidator.FailOnError)
+                // .AddValidator(ReturnValueValidator.FailOnError)
                 .AddColumn(CategoriesColumn.Default)
                 .WithOptions(ConfigOptions.JoinSummary)
                 .WithArtifactsPath(Directory.GetCurrentDirectory())

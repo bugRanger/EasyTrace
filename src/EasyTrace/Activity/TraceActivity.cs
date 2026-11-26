@@ -16,7 +16,7 @@ public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
     public TraceIdentifier TraceId { get; } = TraceIdentifier.CreateTraceId();
     public TraceIdentifier SpanId { get; } = TraceIdentifier.CreateSpanId();
     public TraceIdentifier ParentId { get; } = TraceIdentifier.CreateSpanId();
-    public TraceActivitySource Source { get; internal set; } = TraceActivitySource.Empty;
+    public TraceActivitySource Source { get; internal set; }
     public string OperationName { get; set; } = string.Empty;
     public ActivityKind Kind { get; set; }
     public DateTime StartTime { get; set; }
@@ -28,7 +28,7 @@ public class TraceActivity : ITraceActivity, ICopiable<TraceActivity>
 
     public void Clear()
     {
-        Source = TraceActivitySource.Empty;
+        Source = null!;
         OperationName = string.Empty;
         StartTime = DateTime.MinValue;
         EndTime = DateTime.MinValue;

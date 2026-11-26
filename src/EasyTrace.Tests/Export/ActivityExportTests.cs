@@ -328,7 +328,7 @@ public class ActivityExportTests
         // @formatter:on
 
         // Assert
-        return Verify(inMemoryExporter.Batches, Settings);
+        return Verify(inMemoryExporter.Items, Settings);
     }
 
     [Test]
@@ -361,7 +361,6 @@ public class ActivityExportTests
         return Verify(inMemoryExporter.Batches, Settings);
     }
 
-    
     [Test]
     public Task ReuseActivityScope()
     {
@@ -378,7 +377,7 @@ public class ActivityExportTests
             .Build(nameof(ActivityExportTests));
 
         var scope = source.Start();
-        
+
         // Act
         {
             // @formatter:off
@@ -386,13 +385,78 @@ public class ActivityExportTests
             using (scope) { }
             // @formatter:on
         }
-        
+
         // Assert
         // - wait for batch processing from another thread to complete.
         Task.Delay(500).Wait();
         return Verify(inMemoryExporter.Batches, Settings);
     }
-    
+
+    [Test]
+    public async Task AsyncActivityScope()
+    {
+        // Arrange
+        var inMemoryExporter = new InMemoryExport();
+        var source = new TraceActivitySourceBuilder()
+            .SetIdentifierGenerator(MoqIdentGenerator.Sequence(2))
+            .SetTimeProvider(new MoqTimeProvider())
+            .SetContextMode(ContextMode.AsyncState)
+            .SetBatchExportOptions(new BatchExportOptions
+            {
+                MaxExportSize = 2,
+            })
+            .AddExporter(inMemoryExporter)
+            .Build(nameof(ActivityExportTests));
+
+        // Act
+        {
+            // @formatter:off
+            using var _ = source.Start("parent");
+            await Task.Yield();
+            using var __ = source.Start("child");
+            await Task.Yield();
+            // @formatter:on
+
+        }
+
+        // Assert
+        // - wait for batch processing from another thread to complete.
+        Task.Delay(500).Wait();
+        await Verify(inMemoryExporter.Batches, Settings);
+    }
+
+    [Test]
+    public async Task AsyncActivityScopeAsParents()
+    {
+        // Arrange
+        var inMemoryExporter = new InMemoryExport();
+        var source = new TraceActivitySourceBuilder()
+            .SetIdentifierGenerator(MoqIdentGenerator.Sequence(2))
+            .SetTimeProvider(new MoqTimeProvider())
+            .SetContextMode(ContextMode.AsyncState)
+            .SetBatchExportOptions(new BatchExportOptions
+            {
+                MaxExportSize = 2,
+            })
+            .AddExporter(inMemoryExporter)
+            .Build(nameof(ActivityExportTests));
+
+        // Act
+        {
+            // @formatter:off
+            using (var _ = source.Start("parent1")) { }
+            await Task.Yield();
+            using (var _ = source.Start("parent2")) { }
+            await Task.Yield();
+            // @formatter:on
+        }
+
+        // Assert
+        // - wait for batch processing from another thread to complete.
+        Task.Delay(500).Wait();
+        await Verify(inMemoryExporter.Batches, Settings);
+    }
+
     private const string AttributeSymbols =
         " !\"#$%&'()*+,-./0123456789:;<=>?@" +
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~" +

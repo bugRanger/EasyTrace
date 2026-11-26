@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using EasyTrace.Activity;
+using EasyTrace.Activity.Context;
 using EasyTrace.Export;
 using EasyTrace.Export.Batch;
 using EasyTrace.Export.Otlp.Http;
@@ -10,6 +11,14 @@ using EasyTrace.Time;
 
 namespace EasyTrace;
 
+// TODO: Delete after testing.
+public enum ContextMode
+{
+    ThreadLocal,
+    AsyncLocal,
+    AsyncState,
+}
+
 public class TraceActivitySourceBuilder
 {
     private readonly List<ITraceActivityInterceptor> _interceptors = [];
@@ -17,15 +26,17 @@ public class TraceActivitySourceBuilder
     private BatchExportOptions? _batchExportOptions;
     private BatchExporter? _batchExporter;
     private Dictionary<string, string>? _resources;
-    private TraceActivityParent? _parent;
+    private ContextMode? _contextMode;
     private TraceActivityFactory? _factory;
+    private TraceActivityLimits? _limits;
     private ITraceTimeProvider? _timeProvider;
     private ITraceIdentifierGenerator? _identifierGenerator;
+    private ITraceActivityContext? _context;
 
     public TraceActivitySourceBuilder SetLimits(TraceActivityLimits limits)
     {
-        ThrowIfNotNull(_factory);
-        _factory = new TraceActivityFactory(limits);
+        ThrowIfNotNull(_limits);
+        _limits = limits;
         return this;
     }
 
@@ -48,6 +59,13 @@ public class TraceActivitySourceBuilder
         ThrowIfNotNull(_batchExportOptions);
         batchExportOptions.Validate();
         _batchExportOptions = batchExportOptions;
+        return this;
+    }
+
+    public TraceActivitySourceBuilder SetContextMode(ContextMode value)
+    {
+        ThrowIfNotNull(_contextMode);
+        _contextMode ??= value;
         return this;
     }
 
@@ -100,16 +118,24 @@ public class TraceActivitySourceBuilder
         _timeProvider ??= new TraceTimeProvider();
         _identifierGenerator ??= Xoshiro256PlusPlusShared.Instance;
 
-        _parent ??= new TraceActivityParent();
-        _factory ??= new TraceActivityFactory(new TraceActivityLimits());
+        _factory ??= new TraceActivityFactory(_limits ?? new TraceActivityLimits());
+        _context ??= _contextMode switch
+        {
+            null => new ContextThreadLocal(_factory),
+            ContextMode.ThreadLocal => new ContextThreadLocal(_factory),
+            ContextMode.AsyncLocal => new ContextAsyncLocal(_factory),
+            ContextMode.AsyncState => new ContextAsyncState(_factory),
+            _ => throw new ArgumentOutOfRangeException()
+        };
 
         _batchExportOptions ??= new BatchExportOptions();
         _batchExporter ??= new BatchExporter(new GroupExporter([.. _exporters]), _factory, _batchExportOptions);
 
-        return new TraceActivitySource(name, version)
+        return new TraceActivitySource
         {
-            Parent = _parent,
-            Factory = _factory,
+            Name = name,
+            Version = version?.ToString(),
+            Context = _context,
             TimeProvider = _timeProvider,
             IdentifierGenerator = _identifierGenerator,
             Resources = [.. _resources],

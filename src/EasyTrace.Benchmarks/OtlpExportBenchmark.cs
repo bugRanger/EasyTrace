@@ -1,5 +1,8 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Engines;
 using EasyTrace.Benchmarks.Metrics;
 using EasyTrace.Benchmarks.TestData;
 using EasyTrace.Export.Batch;
@@ -29,19 +32,30 @@ public class OtlpExportBenchmark
     private static ActivitySource? _activitySource;
     private static FakeProcessor? _activityProcessor;
 
-    private static TraceActivitySource? _traceActivitySource;
     private static FakeInterceptor? _traceActivityInterceptor;
+    private static TraceActivitySource? _traceActivitySourceThreadLocal;
+    private static TraceActivitySource? _traceActivitySourceAsyncLocal;
+    private static TraceActivitySource? _traceActivitySourceAsyncState;
 
     private static SocketDiagnoser? _socketDiagnoser;
 
-    private const int ExportBatchSize = 3;
+    private const int ExportBatchSize = 5;
+
+    private readonly Consumer _consumer = new();
+
+    [Params(true, false)] public bool Async { get; set; }
+
+    [Params(5, 25, 100)] public int ActivityCount { get; set; }
 
     [GlobalSetup]
     public void Setup()
     {
         SetupSocketDiagnoser();
         SetupActivitySource();
-        SetupTraceActivity();
+
+        _traceActivitySourceThreadLocal = SetupTraceActivity(ContextMode.ThreadLocal);
+        _traceActivitySourceAsyncLocal = SetupTraceActivity(ContextMode.AsyncLocal);
+        _traceActivitySourceAsyncState = SetupTraceActivity(ContextMode.AsyncState);
     }
 
     [GlobalCleanup]
@@ -51,27 +65,49 @@ public class OtlpExportBenchmark
     }
 
     [Benchmark(Baseline = true, Description = "System.Diagnostics.Activity")]
-    public ulong ActivitySource()
+    public async Task ActivitySource()
     {
+        for (var i = 0; i < ActivityCount; i++)
         {
             using var activity1 = _activitySource!.StartActivity();
+            // Имитация асинхронного переключения контекста
+            if (Async) await Task.Yield();
             using var activity2 = _activitySource.StartActivity();
-            using var activity3 = _activitySource.StartActivity();
         }
 
-        return _activityProcessor!.TotalEvents;
+        _consumer.Consume(_activityProcessor!.TotalEvents);
     }
 
-    [Benchmark(Description = "EasyTrace.Activity")]
-    public ulong TraceActivity()
-    {
+    [Benchmark(Description = "EasyTrace.Activity.ThreadLocal")]
+    public async Task TraceActivity_ThreadLocal() => await TraceActivity(_traceActivitySourceThreadLocal!);
+
+    [Benchmark(Description = "EasyTrace.Activity.AsyncLocal")]
+    public async Task TraceActivity_AsyncLocal() => await TraceActivity(_traceActivitySourceAsyncLocal!);
+
+    [Benchmark(Description = "EasyTrace.Activity.AsyncState")]
+    public async Task TraceActivity_AsyncState() => await TraceActivity(_traceActivitySourceAsyncState!);
+
+    private async Task TraceActivity<T>(T traceActivitySource)
+        where T : TraceActivitySource
+    { 
+        for (var i = 0; i < ActivityCount; i++)
         {
-            using var activity1 = _traceActivitySource!.Start();
-            using var activity2 = _traceActivitySource.Start();
-            using var activity3 = _traceActivitySource.Start();
+            using var activity1 = traceActivitySource!.Start();
+            // Имитация асинхронного переключения контекста
+            if (Async)
+            {
+                if (traceActivitySource == _traceActivitySourceThreadLocal)
+                {
+                    // TODO: Правильный путь сделать через билдер два типа источника (thread/async), в случае первого сделать ошибки сборки.
+                    throw new NotSupportedException();
+                }
+
+                await Task.Yield();
+            }
+            using var activity2 = traceActivitySource.Start();
         }
 
-        return _traceActivityInterceptor!.TotalEvents;
+        _consumer.Consume(_traceActivityInterceptor!.TotalEvents);
     }
 
     private static void SetupSocketDiagnoser()
@@ -96,15 +132,16 @@ public class OtlpExportBenchmark
             .Build();
     }
 
-    private static void SetupTraceActivity()
+    private static TraceActivitySource SetupTraceActivity(ContextMode contextMode)
     {
-        _traceActivityInterceptor = new FakeInterceptor();
-        _traceActivitySource = new TraceActivitySourceBuilder()
+        _traceActivityInterceptor ??= new FakeInterceptor();
+        return new TraceActivitySourceBuilder()
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxQueueSize = ExportBatchSize * 2,
                 MaxExportSize = ExportBatchSize,
             })
+            .SetContextMode(contextMode)
             .AddInterceptor(_traceActivityInterceptor)
             .AddOtlpExporter(new HttpExportParameters())
             .Build(nameof(OtlpExportBenchmark));
