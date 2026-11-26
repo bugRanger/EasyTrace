@@ -1,43 +1,45 @@
 ﻿using System.Reflection;
+using EasyTrace.Activity.Pool;
+using EasyTrace.Export.Batch.Buffer;
 using Microsoft.Extensions.AsyncState;
 
-namespace EasyTrace.Activity;
+namespace EasyTrace.Activity.Context;
 
-public class TraceActivityParentAsync : ITraceActivityParent
+public class ContextAsyncState : ITraceActivityContext
 {
-    private readonly IAsyncState _state;
-    private readonly IAsyncContext<TraceActivity> _context;
+    private readonly IAsyncState _currentState;
+    private readonly IAsyncContext<TraceActivity> _currentContext;
 
-    public TraceActivity? Activity
+    public TraceActivity? Current
     {
-        get => _context.TryGet(out var current) ? current : null;
+        get => _currentContext.TryGet(out var current) ? current : null;
         set
         {
-            if (!_context.TryGet(out _))
+            if (!_currentContext.TryGet(out _))
             {
-                _state.Initialize();
+                _currentState.Initialize();
             }
 
             if (value is null)
             {
-                _state.Reset();
+                _currentState.Reset();
             }
             else
             {
-                _context.Set(value);
+                _currentContext.Set(value);
             }
         }
     }
 
-    public TraceActivityParentAsync()
-    {
-        (_state, _context) = AsyncStateFactory.Create<TraceActivity>();
-    }
-}
+    public ITraceActivityPool Pool { get; }
 
-public static class AsyncStateFactory
-{
-    public static (IAsyncState State, IAsyncContext<T> Context) Create<T>() where T : class
+    public ContextAsyncState(IFactory<TraceActivity> factory)
+    {
+        Pool = new DefaultObjectPool(factory);
+        (_currentState, _currentContext) = AssemblyCreate<TraceActivity>();
+    }
+
+    private static (IAsyncState State, IAsyncContext<T> Context) AssemblyCreate<T>() where T : class
     {
         var assembly = typeof(IAsyncState).Assembly;
 

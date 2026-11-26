@@ -3,53 +3,39 @@ using System.Runtime.CompilerServices;
 using EasyTrace.Activity;
 using EasyTrace.Export.Batch;
 using EasyTrace.Identifier;
-using EasyTrace.Identifier.Generator;
 using EasyTrace.Interceptor;
 using EasyTrace.Time;
 
 namespace EasyTrace;
 
-public class TraceActivitySource(string name, Version? version = null) : IDisposable
+public class TraceActivitySource : IDisposable
 {
-    private readonly ThreadLocal<TraceActivityPool> _poolActivityByThreadLocal = new();
+    private bool _disposed;
 
-    internal static readonly TraceActivitySource Empty = new(nameof(Empty));
+    public string Name { get; init; } = null!;
 
-    internal ITraceActivityParent Parent { get; init; } = new TraceActivityParent();
-    internal TraceActivityFactory Factory { get; init; } = new(new TraceActivityLimits());
-    internal ITraceTimeProvider TimeProvider { get; init; } = new TraceTimeProvider();
-    internal ITraceIdentifierGenerator IdentifierGenerator { get; init; } = new Xoshiro256PlusPlus();
+    public string? Version { get; init; }
+
+    internal ITraceActivityContext Context { get; init; } = null!;
+    internal ITraceTimeProvider TimeProvider { get; init; } = null!;
+    internal ITraceIdentifierGenerator IdentifierGenerator { get; init; } = null!;
     internal KeyValuePair<string, string>[] Resources { get; init; } = [];
     internal BatchExporter? BatchExporter { get; set; }
     internal GroupInterceptor? GroupInterceptor { get; set; }
-
-    private bool _disposed;
-
-    private TraceActivityPool Pool
-    {
-        get
-        {
-            _poolActivityByThreadLocal.Value ??= new TraceActivityPool(256, Factory);
-            return _poolActivityByThreadLocal.Value;
-        }
-    }
-
-    public string Name { get; } = name;
-
-    public string? Version { get; } = version?.ToString();
 
     public TraceActivityScope Start(
         [CallerMemberName] string operationName = "",
         ActivityKind kind = ActivityKind.Internal)
     {
-        if (this == Empty || BatchExporter is not { IsActive: true } && GroupInterceptor is not { IsActive: true })
+        if (BatchExporter is not { IsActive: true } && GroupInterceptor is not { IsActive: true })
         {
-            return new TraceActivityScope(null);   
+            return new TraceActivityScope(null);
         }
 
-        var activity = Pool.Rent();
+        var activity = Context.Pool.Rent();
+        activity.Source = this;
 
-        if (Parent.Activity == null)
+        if (Context.Current == null)
         {
             activity.Parent = null;
             activity.ParentId.Clear();
@@ -57,21 +43,20 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
         }
         else
         {
-            activity.Parent = Parent.Activity;
-            activity.ParentId.CopyFrom(Parent.Activity.SpanId);
-            activity.TraceId.CopyFrom(Parent.Activity.TraceId);
+            activity.Parent = Context.Current;
+            activity.ParentId.CopyFrom(Context.Current.SpanId);
+            activity.TraceId.CopyFrom(Context.Current.TraceId);
         }
 
         activity.SpanId.Generate(IdentifierGenerator);
         activity.OperationName = operationName;
-        activity.Source = this;
         activity.Kind = kind;
         activity.StartTime = TimeProvider.GetDateTime();
         activity.Recorded = true;
         // TODO: Support mark if parent is remote.
         activity.RemoteParent = false;
 
-        Parent.Activity = activity;
+        Context.Current = activity;
 
         scoped var activityRef = new TraceActivityRef(activity);
         GroupInterceptor?.Start(activityRef);
@@ -81,23 +66,17 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
 
     public void Stop(TraceActivity activity)
     {
-        if (this == Empty)
-        {
-            return;
-        }
-
         try
         {
             if (activity.EndTime == DateTime.MinValue)
             {
                 activity.EndTime = TimeProvider.GetDateTime();
             }
-
-            Parent.Activity = activity.Parent;
+            
+            Context.Current = activity.Parent;
             scoped var activityRef = new TraceActivityRef(activity);
 
             GroupInterceptor?.Stop(in activityRef);
-
             if (BatchExporter is { IsActive: true })
             {
                 BatchExporter?.Handle(in activityRef);
@@ -106,7 +85,7 @@ public class TraceActivitySource(string name, Version? version = null) : IDispos
         finally
         {
             activity.Clear();
-            Pool.Return(activity);
+            Context.Pool.Return(activity);
         }
     }
 

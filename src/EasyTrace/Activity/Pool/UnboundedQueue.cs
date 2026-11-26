@@ -1,9 +1,8 @@
-﻿namespace EasyTrace.Activity;
+﻿using EasyTrace.Export.Batch.Buffer;
 
-/// <summary>
-/// <see cref="TraceActivity"/> pool to reduce GC load.
-/// </summary>
-public class TraceActivityPool(int capacity, TraceActivityFactory factory)
+namespace EasyTrace.Activity.Pool;
+
+public class UnboundedQueue(int capacity, IFactory<TraceActivity> factory) : ITraceActivityPool
 {
     private readonly Queue<TraceActivity> _queue = new(capacity);
     private TraceActivity? _fastItem;

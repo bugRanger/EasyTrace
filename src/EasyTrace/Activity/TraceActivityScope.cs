@@ -16,6 +16,10 @@ public struct TraceActivityScope(TraceActivity? activity) : IDisposable
     public void Dispose()
     {
         var local = Interlocked.Exchange(ref _activity, null);
-        local?.Source.Stop(local);
+        // TODO: без ограничения на scope обрузется окно для повторного обращения к автивности.
+        if (local is not { Source : null })
+        {
+            local!.Source.Stop(local);   
+        }
     }
 }
