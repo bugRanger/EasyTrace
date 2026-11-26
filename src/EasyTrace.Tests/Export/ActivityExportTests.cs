@@ -328,7 +328,7 @@ public class ActivityExportTests
         // @formatter:on
 
         // Assert
-        return Verify(inMemoryExporter.Batches, Settings);
+        return Verify(inMemoryExporter.Items, Settings);
     }
 
     [Test]
@@ -400,7 +400,7 @@ public class ActivityExportTests
         var source = new TraceActivitySourceBuilder()
             .SetIdentifierGenerator(MoqIdentGenerator.Sequence(2))
             .SetTimeProvider(new MoqTimeProvider())
-            .SetAsyncScope()
+            .SetContextMode(ContextMode.AsyncState)
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = 2,
@@ -433,7 +433,7 @@ public class ActivityExportTests
         var source = new TraceActivitySourceBuilder()
             .SetIdentifierGenerator(MoqIdentGenerator.Sequence(2))
             .SetTimeProvider(new MoqTimeProvider())
-            .SetAsyncScope()
+            .SetContextMode(ContextMode.AsyncState)
             .SetBatchExportOptions(new BatchExportOptions
             {
                 MaxExportSize = 2,
