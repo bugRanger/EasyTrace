@@ -1,18 +1,18 @@
-﻿using EasyTrace.Export.Batch.Buffer;
+﻿using EasyTrace.Activity.Pool;
+using EasyTrace.Export.Batch.Buffer;
 
 namespace EasyTrace.Activity.Context;
 
 public class ContextAsyncLocal(IFactory<TraceActivity> factory) : ITraceActivityContext
 {
-    private readonly AsyncLocal<TraceActivityContext> _contextAsyncLocal = new();
+    private readonly AsyncLocal<TraceActivity?> _currentLocal = new();
 
-    private TraceActivityContext Context => _contextAsyncLocal.Value ??= new TraceActivityContext(factory);
 
     public TraceActivity? Current
     {
-        get => Context.Current;
-        set => Context.Current = value;
+        get => _currentLocal.Value;
+        set => _currentLocal.Value = value;
     }
 
-    public ITraceActivityPool Pool => Context.Pool;
+    public ITraceActivityPool Pool => new DefaultObjectPool(factory);
 }
